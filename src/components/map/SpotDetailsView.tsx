@@ -5,7 +5,7 @@ import {
   X, MapPin, Fish, Award, Lock, Users, Eye, Star, Share2, 
   Navigation, Trophy, Wind, Thermometer, Clock, Camera,
   TrendingUp, BarChart3, Bell, BellOff, User, Calendar,
-  ArrowRight, Plus
+  ArrowRight, Plus, Warehouse, Utensils, Wifi, Car, Phone, Anchor, Megaphone, ChevronRight
 } from 'lucide-react'
 import TrophyCardModal from '../social/TrophyCardModal'
 import type { SpotMapView, Capture, Setup, Profile } from '@/types/database'
@@ -18,6 +18,8 @@ interface SpotDetailsViewProps {
   isOpen: boolean
   onClose: () => void
   onNewCapture?: (spotId: string) => void
+  user: any
+  onShowPaywall: (feature: string) => void
 }
 
 type CaptureWithData = Capture & {
@@ -51,11 +53,13 @@ export default function SpotDetailsView({
   isOpen,
   onClose,
   onNewCapture,
+  user,
+  onShowPaywall
 }: SpotDetailsViewProps) {
   const [captures, setCaptures] = useState<CaptureWithData[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isFollowing, setIsFollowing] = useState(false)
-  const [activeTab, setActiveTab] = useState<'insights' | 'feed' | 'ranking'>('insights')
+  const [activeTab, setActiveTab] = useState<'insights' | 'feed' | 'ranking' | 'infra'>('insights')
   const [showTrophyModal, setShowTrophyModal] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
 
@@ -189,8 +193,13 @@ export default function SpotDetailsView({
           <div className="absolute bottom-6 left-6 right-6">
             <div className="flex items-center gap-2 mb-2">
               <span className="badge badge-green px-3 py-1 text-[10px] uppercase font-bold tracking-wider">
-                {spot.water_type || 'Pesqueiro'}
+                {spot.is_resort ? 'Pesqueiro' : (spot.water_type || 'Ponto')}
               </span>
+              {spot.is_resort_partner && (
+                <span className="badge badge-amber px-3 py-1 text-[10px] uppercase font-bold tracking-wider flex items-center gap-1">
+                  <Star size={10} fill="currentColor" /> Parceiro
+                </span>
+              )}
               <span className="badge badge-blue px-3 py-1 text-[10px] uppercase font-bold tracking-wider">
                 {spot.privacy_level}
               </span>
@@ -237,7 +246,8 @@ export default function SpotDetailsView({
             {[
               { id: 'insights', label: 'Insights', icon: BarChart3 },
               { id: 'feed', label: 'Feed', icon: Camera },
-              { id: 'ranking', label: 'Ranking', icon: Trophy }
+              { id: 'ranking', label: 'Ranking', icon: Trophy },
+              ...(spot.is_resort ? [{ id: 'infra', label: 'Infra', icon: Warehouse }] : [])
             ].map(tab => (
               <button
                 key={tab.id}
@@ -260,80 +270,117 @@ export default function SpotDetailsView({
           
           {/* TAB: INSIGHTS */}
           {activeTab === 'insights' && (
-            <div className="space-y-8 fade-in">
-              {/* KPIs de Eficiência */}
-              <section>
-                <h3 className="form-section-title mb-4">
-                  <TrendingUp size={14} /> Dashboard de Eficiência
-                </h3>
-                
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="card p-4 flex flex-col items-center justify-center bg-accent/5 border-accent/20">
-                    <span className="label text-[10px] text-accent">Isca Fatal</span>
-                    <span className="text-xl font-bold mt-1">
-                      {stats?.topLures[0]?.emoji} {stats?.topLures[0]?.label || '---'}
-                    </span>
+            <div className="space-y-8 fade-in relative min-h-[400px]">
+              
+              {/* Paywall Overlay for Free Users */}
+              {(!user || user?.profile?.subscription_tier === 'free') && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center p-8 bg-[#0a0f1a]/60 backdrop-blur-md rounded-3xl border border-white/5">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-dark shadow-xl mb-6 animate-pulse">
+                    <Lock size={32} />
                   </div>
-                  <div className="card p-4 flex flex-col items-center justify-center">
-                    <span className="label text-[10px]">Melhor Período</span>
-                    <span className="text-xl font-bold mt-1 flex items-center gap-2">
-                      <Clock size={16} className="text-amber-400" />
-                      {stats?.bestPeriod ? PERIOD_LABELS[stats.bestPeriod[0]] : '---'}
-                    </span>
-                  </div>
+                  <h3 className="text-xl font-black text-white uppercase tracking-tighter mb-2">Relatório de Iscas Bloqueado</h3>
+                  <p className="text-sm text-gray-400 mb-8 max-w-[240px]">
+                    Assine o plano <span className="text-accent font-bold">PRO</span> para ver quais iscas estão matando a pau neste ponto.
+                  </p>
+                  <button 
+                    onClick={() => onShowPaywall('Relatório de Iscas')}
+                    className="btn-primary py-4 px-8 text-xs font-black uppercase tracking-widest shadow-2xl shadow-accent/20"
+                  >
+                    Liberar Insights Pro
+                  </button>
                 </div>
+              )}
 
-                {/* O que está batendo */}
-                <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-gray-400 flex items-center gap-2">
-                     As 3 mais vitoriosas
-                  </h4>
-                  {stats?.topLures.map((lure, idx) => (
-                    <div key={lure.type} className="space-y-2">
-                      <div className="flex justify-between text-xs font-bold">
-                        <span className="flex items-center gap-2">
-                          <span className="text-lg">{lure.emoji}</span> {lure.label}
-                        </span>
-                        <span className="text-accent">{lure.percent}% de sucesso</span>
-                      </div>
-                      <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-accent rounded-full animate-grow"
-                          style={{ width: `${lure.percent}%`, animationDelay: `${idx * 150}ms` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                  {(!stats || stats.topLures.length === 0) && (
-                    <p className="text-xs text-center text-gray-500 py-4 italic">Dados insuficientes para este ponto.</p>
-                  )}
-                </div>
-              </section>
-
-              {/* Capturas por Período */}
-              <section>
-                <h4 className="text-sm font-bold text-gray-400 mb-4 flex items-center gap-2">
-                  <BarChart3 size={14} /> Fluxo de Capturas por Período
-                </h4>
-                <div className="grid grid-cols-5 gap-2 items-end h-32 pt-4">
-                  {stats?.periodStats.map((p, idx) => (
-                    <div key={p.label} className="group relative flex flex-col items-center h-full">
-                      <div className="absolute -top-6 text-[10px] font-bold text-accent opacity-0 group-hover:opacity-100 transition-opacity">
-                        {p.count}
-                      </div>
-                      <div className="flex-1 w-full bg-white/5 rounded-t-md relative overflow-hidden flex flex-col justify-end">
-                        <div 
-                          className="w-full bg-gradient-to-t from-accent/80 to-accent rounded-t-md transition-all duration-700 hover:brightness-125"
-                          style={{ height: `${p.percent}%`, transitionDelay: `${idx * 100}ms` }}
-                        />
-                      </div>
-                      <span className="text-[9px] mt-2 text-gray-500 font-bold truncate w-full text-center">
-                        {p.label}
+              <div className={`${(!user || user?.profile?.subscription_tier === 'free') ? 'opacity-20 pointer-events-none filter blur-sm' : ''} space-y-8`}>
+                {/* KPIs de Eficiência */}
+                <section>
+                  <h3 className="form-section-title mb-4">
+                    <TrendingUp size={14} /> Dashboard de Eficiência
+                  </h3>
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="card p-4 flex flex-col items-center justify-center bg-accent/5 border-accent/20">
+                      <span className="label text-[10px] text-accent">Isca Fatal</span>
+                      <span className="text-xl font-bold mt-1">
+                        {stats?.topLures[0]?.emoji} {stats?.topLures[0]?.label || '---'}
                       </span>
                     </div>
-                  ))}
-                </div>
-              </section>
+                    <div className="card p-4 flex flex-col items-center justify-center">
+                      <span className="label text-[10px]">Melhor Período</span>
+                      <span className="text-xl font-bold mt-1 flex items-center gap-2">
+                        <Clock size={16} className="text-amber-400" />
+                        {stats?.bestPeriod ? PERIOD_LABELS[stats.bestPeriod[0]] : '---'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Status Ativo (Pesqueiro) */}
+                  {spot.is_resort && spot.resort_active_highlight && (
+                    <div className="glass p-5 rounded-2xl border-accent/30 bg-accent/5 mb-6 animate-pulse">
+                      <div className="flex items-center gap-3">
+                         <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent">
+                            <Fish size={20} />
+                         </div>
+                         <div>
+                            <p className="text-[10px] font-black text-accent uppercase tracking-widest">Atividade da Semana</p>
+                            <p className="text-sm font-bold text-white">{spot.resort_active_highlight}</p>
+                         </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* O que está batendo */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-gray-400 flex items-center gap-2">
+                       As 3 mais vitoriosas
+                    </h4>
+                    {stats?.topLures.map((lure, idx) => (
+                      <div key={lure.type} className="space-y-2">
+                        <div className="flex justify-between text-xs font-bold">
+                          <span className="flex items-center gap-2">
+                            <span className="text-lg">{lure.emoji}</span> {lure.label}
+                          </span>
+                          <span className="text-accent">{lure.percent}% de sucesso</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-accent rounded-full animate-grow"
+                            style={{ width: `${lure.percent}%`, animationDelay: `${idx * 150}ms` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    {(!stats || stats.topLures.length === 0) && (
+                      <p className="text-xs text-center text-gray-500 py-4 italic">Dados insuficientes para este ponto.</p>
+                    )}
+                  </div>
+                </section>
+
+                {/* Capturas por Período */}
+                <section>
+                  <h4 className="text-sm font-bold text-gray-400 mb-4 flex items-center gap-2">
+                    <BarChart3 size={14} /> Fluxo de Capturas por Período
+                  </h4>
+                  <div className="grid grid-cols-5 gap-2 items-end h-32 pt-4">
+                    {stats?.periodStats.map((p, idx) => (
+                      <div key={p.label} className="group relative flex flex-col items-center h-full">
+                        <div className="absolute -top-6 text-[10px] font-bold text-accent opacity-0 group-hover:opacity-100 transition-opacity">
+                          {p.count}
+                        </div>
+                        <div className="flex-1 w-full bg-white/5 rounded-t-md relative overflow-hidden flex flex-col justify-end">
+                          <div 
+                            className="w-full bg-gradient-to-t from-accent/80 to-accent rounded-t-md transition-all duration-700 hover:brightness-125"
+                            style={{ height: `${p.percent}%`, transitionDelay: `${idx * 100}ms` }}
+                          />
+                        </div>
+                        <span className="text-[9px] mt-2 text-gray-500 font-bold truncate w-full text-center">
+                          {p.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
             </div>
           )}
 
@@ -425,6 +472,103 @@ export default function SpotDetailsView({
             </div>
           )}
 
+          {/* TAB: INFRAESTRUTURA (Exclusiva Pesqueiros) */}
+          {activeTab === 'infra' && spot.is_resort && (
+            <div className="space-y-8 fade-in">
+              <section>
+                <h3 className="form-section-title mb-4">
+                  <Warehouse size={14} /> Comodidades e Serviços
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { key: 'restaurante', label: 'Restaurante', icon: Utensils },
+                    { key: 'banheiros', label: 'Banheiros', icon: Warehouse },
+                    { key: 'wi_fi', label: 'Wi-Fi', icon: Wifi },
+                    { key: 'pousada', label: 'Pousada', icon: Warehouse },
+                    { key: 'aluguel_equipamento', label: 'Aluguel Equip.', icon: Anchor },
+                    { key: 'estacionamento', label: 'Estacionamento', icon: Car },
+                  ].map((item) => {
+                    const infra = (spot.resort_infrastructure as any) || {}
+                    const available = infra[item.key]
+                    return (
+                      <div key={item.key} className={`card p-4 flex items-center gap-3 ${available ? 'bg-accent/5 border-accent/20' : 'opacity-40 grayscale'}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${available ? 'bg-accent/10 text-accent' : 'bg-white/5 text-gray-500'}`}>
+                          <item.icon size={20} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">{item.label}</p>
+                          <p className="text-[10px] uppercase font-black">{available ? 'Disponível' : 'Não possui'}</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+
+              <section className="glass p-6 rounded-2xl border border-white/5 space-y-4">
+                 <h4 className="text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                   <Clock size={14} className="text-accent" /> Informações de Visita
+                 </h4>
+                 <div className="grid grid-cols-1 gap-4">
+                    <div className="flex justify-between items-start text-sm">
+                       <span className="text-gray-400">Horário:</span>
+                       <span className="text-white font-bold text-right max-w-[200px]">{spot.opening_hours || 'Consulte o local'}</span>
+                    </div>
+                    {spot.resort_prices && (
+                      <div className="space-y-2 border-t border-white/5 pt-3 mt-1">
+                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Tabela de Preços</p>
+                         <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-400">Entrada (Base):</span>
+                            <span className="text-accent font-black">R$ {(spot.resort_prices as any)?.entry || '--'}</span>
+                         </div>
+                         <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-400">Quilo do Peixe:</span>
+                            <span className="text-white font-bold">R$ {(spot.resort_prices as any)?.kg || '--'}</span>
+                         </div>
+                      </div>
+                    )}
+                 </div>
+                 {spot.phone && (
+                   <button 
+                    onClick={() => window.open(`tel:${spot.phone}`)}
+                    className="btn-secondary w-full flex items-center justify-center gap-2 mt-2"
+                   >
+                      <Phone size={14} /> Ligar para Reservas
+                   </button>
+                 )}
+              </section>
+
+              {/* Mural de Avisos */}
+              {spot.resort_notice_board && (
+                <section className="bg-amber-500/10 border border-amber-500/30 p-6 rounded-2xl relative overflow-hidden">
+                   <Megaphone size={40} className="absolute -right-4 -bottom-4 text-amber-500/10 rotate-12" />
+                   <h4 className="text-amber-500 font-black text-[10px] uppercase tracking-[0.2em] mb-3">Mural de Avisos</h4>
+                   <p className="text-white font-medium text-sm leading-relaxed">
+                     "{spot.resort_notice_board}"
+                   </p>
+                </section>
+              )}
+
+              {/* Tournament CTA */}
+              {spot.open_tournaments_count > 0 && (
+                <button 
+                  onClick={() => window.location.href = '/tournaments'}
+                  className="w-full glass-elevated border-accent/20 p-5 rounded-2xl flex items-center justify-between group hover:border-accent transition-all"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-accent text-dark flex items-center justify-center">
+                      <Trophy size={24} />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs font-black text-accent uppercase">Torneio Ativo</p>
+                      <p className="text-sm font-bold">{spot.open_tournaments_count} evento(s) disponível(is)</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={20} className="text-gray-500 group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Floating Action Button - New Capture */}

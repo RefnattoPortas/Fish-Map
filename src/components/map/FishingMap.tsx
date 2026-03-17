@@ -33,6 +33,7 @@ interface FishingMapProps {
   showHeatmap?: boolean
   center?: [number, number]
   zoom?: number
+  onMapClick?: (lat: number, lng: number) => void
 }
 
 export default function FishingMap({
@@ -44,6 +45,7 @@ export default function FishingMap({
   showHeatmap = false,
   center = [-15.7801, -47.9292], // Brasília como padrão
   zoom = 6,
+  onMapClick,
 }: FishingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletMapRef = useRef<LeafletMap | null>(null)
@@ -51,6 +53,12 @@ export default function FishingMap({
   const [isLoaded, setIsLoaded] = useState(false)
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const isInitializingRef = useRef(false)
+  const onMapClickRef = useRef(onMapClick)
+
+  // Atualizar ref do callback
+  useEffect(() => {
+    onMapClickRef.current = onMapClick
+  }, [onMapClick])
 
   // Obter localização do usuário
   useEffect(() => {
@@ -100,7 +108,7 @@ export default function FishingMap({
         mapInstance = L.map(el, {
           center: center,
           zoom: zoom,
-          zoomControl: true,
+          zoomControl: false, // Desativado para customização
           attributionControl: false,
         })
 
@@ -114,6 +122,11 @@ export default function FishingMap({
         L.control.attribution({
           prefix: '© WikiFish | © CartoDB'
         }).addTo(mapInstance)
+
+        // Evento de clique no mapa
+        mapInstance.on('click', (e: any) => {
+          onMapClickRef.current?.(e.latlng.lat, e.latlng.lng)
+        })
 
         leafletMapRef.current = mapInstance
         setIsLoaded(true)
@@ -222,6 +235,12 @@ export default function FishingMap({
         }
 
         // Criar ícone do pin personalizado
+        const isResort = (spot as any).is_resort
+        const isPartner = (spot as any).is_resort_partner
+        const pinEmoji = isResort ? '🏡' : '🎣'
+        const baseColor = isPartner ? '#fbbf24' : (isSelected ? privacyColor : 'var(--color-bg-card, #121e30)')
+        const borderColor = isPartner ? '#fbbf24' : (isResort ? 'var(--color-accent-primary)' : privacyColor)
+        
         const icon = L.divIcon({
           className: '',
           html: `
@@ -231,14 +250,31 @@ export default function FishingMap({
               align-items: center;
               justify-content: center;
             ">
+              ${isPartner ? `
+                <div style="
+                  position: absolute;
+                  width: 50px; height: 50px;
+                  background: rgba(251, 191, 36, 0.15);
+                  border-radius: 50%;
+                  animation: partner-pulse 2s infinite;
+                  z-index: -1;
+                "></div>
+                <style>
+                  @keyframes partner-pulse {
+                    0% { transform: scale(0.8); opacity: 0.8; }
+                    100% { transform: scale(1.6); opacity: 0; }
+                  }
+                </style>
+              ` : ''}
               <div style="
                 width: ${isSelected ? 40 : 32}px;
                 height: ${isSelected ? 40 : 32}px;
-                background: ${isSelected ? privacyColor : 'var(--color-bg-card, #121e30)'};
-                border: 2.5px solid ${privacyColor};
+                background: ${baseColor};
+                border: 2.5px solid ${borderColor};
                 border-radius: 50% 50% 50% 0;
                 transform: rotate(-45deg);
-                box-shadow: 0 4px 20px ${privacyColor}55, 0 0 0 ${isSelected ? '6px' : '3px'} ${privacyColor}22;
+                box-shadow: 0 4px 20px ${isPartner ? '#fbbf2455' : privacyColor + '55'}, 
+                            0 0 0 ${isSelected ? '6px' : '3px'} ${isPartner ? '#fbbf2422' : privacyColor + '22'};
                 transition: all 0.2s ease;
               ">
               </div>
@@ -247,12 +283,40 @@ export default function FishingMap({
                 font-size: ${isSelected ? 16 : 13}px;
                 z-index: 1;
                 pointer-events: none;
-              ">🎣</span>
+                filter: ${isPartner ? 'drop-shadow(0 0 2px rgba(0,0,0,0.5))' : 'none'};
+              ">${pinEmoji}</span>
               ${spot.is_verified
                 ? `<div style="position:absolute;top:-4px;right:-4px;width:14px;height:14px;background:#00d4aa;border-radius:50%;border:2px solid #0a0f1a;font-size:8px;display:flex;align-items:center;justify-content:center;">✓</div>`
                 : ''}
               ${isFuzzed
-                ? `<div style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);font-size:8px;background:#f59e0b;color:#000;padding:1px 5px;border-radius:8px;white-space:nowrap;font-weight:700;">~${Math.round(spot.fuzz_radius_m/1000)}km</div>`
+                ? `<div style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);font-size:8px;background:#f59e0b;color:#000;padding:1px 5px;border-radius:8px;white-space:nowrap;font-weight:700;">~${Math.round((spot.fuzz_radius_m || 0) / 1000)}km</div>`
+                : ''}
+              
+              ${isResort && spot.resort_active_highlight
+                ? `
+                <div style="
+                  position: absolute;
+                  top: -35px;
+                  background: ${isPartner ? '#fbbf24' : 'var(--color-accent-glow, #00d4aa)'};
+                  color: #000;
+                  padding: 4px 10px;
+                  border-radius: 12px 12px 12px 0;
+                  font-size: 10px;
+                  font-weight: 800;
+                  white-space: nowrap;
+                  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                  border: 1.5px solid ${isPartner ? '#d97706' : 'var(--color-accent-primary)'};
+                  animation: bounce 2s infinite;
+                ">
+                  ${isPartner ? '👑' : '🐟'} ${spot.resort_active_highlight}
+                </div>
+                <style>
+                  @keyframes bounce {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-3px); }
+                  }
+                </style>
+                `
                 : ''}
             </div>
           `,
@@ -301,41 +365,56 @@ export default function FishingMap({
         </div>
       )}
 
-      {/* Legenda do mapa */}
+      {/* Legenda e Zoom Customizado */}
       {isLoaded && (
-        <div
-          className="glass absolute"
+        <div 
+          className="absolute flex items-end gap-3"
           style={{ 
             bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', 
             left: 16, 
-            padding: '10px 14px', 
-            borderRadius: 12, 
             zIndex: 900 
           }}
         >
-          <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>
-            Legenda
-          </p>
-          {Object.entries(PRIVACY_COLORS).map(([key, color]) => (
-            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />
-              <span style={{ fontSize: 11, color: 'var(--color-text-secondary)', textTransform: 'capitalize' }}>
-                {key === 'public' ? 'Público' : key === 'community' ? 'Comunitário' : 'Privado'}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+          {/* Container Coluna: Legenda em baixo, Info acima */}
+          <div className="flex flex-col gap-3">
+             {/* Info de Pontos (acima da legenda) */}
+             <div className="glass px-3 py-1.5 rounded-xl border border-white/5 shadow-xl w-fit">
+                <span className="text-[10px] text-accent font-black uppercase tracking-wider">
+                  🎣 {spots.length} pontos
+                </span>
+             </div>
 
-      {/* Contagem de spots */}
-      {isLoaded && (
-        <div
-          className="glass absolute"
-          style={{ top: 16, left: 16, padding: '8px 14px', borderRadius: 10, zIndex: 900 }}
-        >
-          <span style={{ fontSize: 12, color: 'var(--color-accent-primary)', fontWeight: 600 }}>
-            🎣 {spots.length} pontos
-          </span>
+             {/* Legenda */}
+             <div className="glass p-2.5 rounded-2xl border border-white/5 shadow-2xl w-[120px]">
+                <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">Legenda</p>
+                <div className="flex flex-col gap-2">
+                   {Object.entries(PRIVACY_COLORS).map(([key, color]) => (
+                     <div key={key} className="flex items-center gap-2">
+                       <div className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
+                       <span className="text-[10px] text-gray-400 font-bold uppercase">
+                         {key === 'public' ? 'Público' : key === 'community' ? 'Comunitário' : 'Privado'}
+                       </span>
+                     </div>
+                   ))}
+                </div>
+             </div>
+          </div>
+
+          {/* Zoom Controls (à direita da legenda) */}
+          <div className="flex flex-col gap-2">
+             <button 
+              onClick={() => leafletMapRef.current?.zoomIn()}
+              className="w-10 h-10 glass rounded-xl flex items-center justify-center text-white hover:bg-white/10 transition-all font-black text-lg border border-white/10"
+             >
+                +
+             </button>
+             <button 
+              onClick={() => leafletMapRef.current?.zoomOut()}
+              className="w-10 h-10 glass rounded-xl flex items-center justify-center text-white hover:bg-white/10 transition-all font-black text-lg border border-white/10"
+             >
+                −
+             </button>
+          </div>
         </div>
       )}
     </div>

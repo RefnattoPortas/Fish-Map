@@ -16,6 +16,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [activeTab, setActiveTab] = useState('Perfil')
 
   useEffect(() => {
     fetchProfile()
@@ -98,14 +99,15 @@ export default function SettingsPage() {
             {/* Sidebar de Navegação Interna */}
             <aside className="space-y-2">
               {[
-                { label: 'Perfil', icon: User, active: true },
-                { label: 'Notificações', icon: Bell, active: false },
-                { label: 'Privacidade', icon: Shield, active: false },
+                { label: 'Perfil', icon: User },
+                { label: 'Notificações', icon: Bell },
+                { label: 'Privacidade', icon: Shield },
               ].map((item) => (
                 <button
                   key={item.label}
+                  onClick={() => setActiveTab(item.label)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm ${
-                    item.active 
+                    activeTab === item.label 
                       ? 'bg-accent text-dark shadow-lg shadow-accent/20' 
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
@@ -119,13 +121,15 @@ export default function SettingsPage() {
             {/* Painel Central */}
             <div className="md:col-span-2 space-y-6">
               
-              {/* Profile Card */}
-              <div className="glass-elevated p-8 rounded-[32px] border border-white/5 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-[60px] rounded-full -mr-16 -mt-16" />
-                
-                <h3 className="text-white font-black text-lg uppercase tracking-tighter mb-8 flex items-center gap-2">
-                  <User size={20} className="text-accent" /> Informações do Perfil
-                </h3>
+              {activeTab === 'Perfil' && (
+                <>
+                  {/* Profile Card */}
+                  <div className="glass-elevated p-8 rounded-[32px] border border-white/5 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-[60px] rounded-full -mr-16 -mt-16" />
+                    
+                    <h3 className="text-white font-black text-lg uppercase tracking-tighter mb-8 flex items-center gap-2">
+                      <User size={20} className="text-accent" /> Informações do Perfil
+                    </h3>
 
                 <div className="space-y-6">
                   {/* Avatar Upload Placeholder */}
@@ -201,22 +205,49 @@ export default function SettingsPage() {
                       )}
                     </button>
                   </div>
-                </div>
-              </div>
-
-              {/* Danger Zone */}
-              <div className="p-8 rounded-[32px] border border-red-500/20 bg-red-500/[0.02] space-y-4">
-                <h4 className="text-red-500 font-black text-xs uppercase tracking-widest">Zona de Perigo</h4>
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-white text-sm font-bold">Desconectar conta</p>
-                    <p className="text-gray-500 text-xs text-balance">Isso removerá sua sessão atual deste dispositivo.</p>
                   </div>
-                  <button className="px-5 py-2.5 rounded-xl border border-red-500/30 text-red-500 font-black text-xs uppercase tracking-widest hover:bg-red-500/10 transition-colors flex items-center gap-2">
-                    <LogOut size={14} /> Sair
-                  </button>
                 </div>
-              </div>
+
+                {/* Danger Zone */}
+                <div className="p-8 rounded-[32px] border border-red-500/20 bg-red-500/[0.02] space-y-4">
+                  <h4 className="text-red-500 font-black text-xs uppercase tracking-widest">Zona de Perigo</h4>
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-white text-sm font-bold">Desconectar conta</p>
+                      <p className="text-gray-500 text-xs text-balance">Isso removerá sua sessão atual deste dispositivo.</p>
+                    </div>
+                    <button className="px-5 py-2.5 rounded-xl border border-red-500/30 text-red-500 font-black text-xs uppercase tracking-widest hover:bg-red-500/10 transition-colors flex items-center gap-2">
+                      <LogOut size={14} /> Sair
+                    </button>
+                  </div>
+                </div>
+              </>
+              )}
+
+              {activeTab === 'Notificações' && (
+                <div className="glass-elevated p-8 rounded-[32px] border border-white/5 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-[60px] rounded-full -mr-16 -mt-16" />
+                  <h3 className="text-white font-black text-lg uppercase tracking-tighter mb-8 flex items-center gap-2">
+                    <Bell size={20} className="text-accent" /> Notificações
+                  </h3>
+                  <div className="space-y-6">
+                    <p className="text-gray-400 font-medium">As configurações de notificações estarão disponíveis em breve.</p>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'Privacidade' && (
+                <div className="glass-elevated p-8 rounded-[32px] border border-white/5 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-[60px] rounded-full -mr-16 -mt-16" />
+                  <h3 className="text-white font-black text-lg uppercase tracking-tighter mb-8 flex items-center gap-2">
+                    <Shield size={20} className="text-accent" /> Privacidade
+                  </h3>
+                  <div className="space-y-6">
+                    <p className="text-gray-400 font-medium">As configurações de privacidade estarão disponíveis em breve.</p>
+                  </div>
+                </div>
+              )}
+
 
             </div>
           </div>

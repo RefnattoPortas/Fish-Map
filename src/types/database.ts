@@ -23,6 +23,7 @@ export interface Database {
           total_spots: number
           xp_points: number
           level: number
+          subscription_tier: 'free' | 'pro' | 'partner'
           created_at: string
           updated_at: string
         }
@@ -190,6 +191,123 @@ export interface Database {
         }
         Update: Partial<Database['public']['Tables']['interactions']['Insert']>
       }
+      achievements: {
+        Row: {
+          id: string
+          code: string
+          name: string
+          description: string | null
+          icon_name: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          name: string
+          description?: string | null
+          icon_name?: string | null
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['achievements']['Insert']>
+      }
+      user_achievements: {
+        Row: {
+          id: string
+          user_id: string
+          achievement_id: string
+          earned_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          achievement_id: string
+          earned_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['user_achievements']['Insert']>
+      }
+      fishing_resorts: {
+        Row: {
+          id: string
+          spot_id: string
+          infrastructure: Json
+          opening_hours: string | null
+          prices: Json
+          phone: string | null
+          instagram: string | null
+          website: string | null
+          is_partner: boolean
+          main_species: string[]
+          active_highlight: string | null
+          notice_board: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          spot_id: string
+          infrastructure?: Json
+          opening_hours?: string | null
+          prices?: Json
+          phone?: string | null
+          instagram?: string | null
+          website?: string | null
+          is_partner?: boolean
+          main_species?: string[]
+          active_highlight?: string | null
+          notice_board?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['fishing_resorts']['Insert']>
+      }
+      tournaments: {
+        Row: {
+          id: string
+          resort_id: string
+          title: string
+          description: string | null
+          event_date: string
+          entry_fee: number
+          rules: string | null
+          status: 'open' | 'ongoing' | 'closed'
+          max_participants: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          resort_id: string
+          title: string
+          description?: string | null
+          event_date: string
+          entry_fee?: number
+          rules?: string | null
+          status?: 'open' | 'ongoing' | 'closed'
+          max_participants?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['tournaments']['Insert']>
+      }
+      tournament_participants: {
+        Row: {
+          id: string
+          tournament_id: string
+          user_id: string
+          checked_in: boolean
+          points: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          tournament_id: string
+          user_id: string
+          checked_in?: boolean
+          points?: number
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['tournament_participants']['Insert']>
+      }
     }
     Views: {
       spots_map_view: {
@@ -213,9 +331,22 @@ export interface Database {
           latest_lure_type: string | null
           latest_lure_model: string | null
           latest_lure_color: string | null
-          photo_url: string | null
           owner_name: string | null
           owner_avatar: string | null
+          photo_url: string | null
+          resort_id: string | null
+          opening_hours: string | null
+          phone: string | null
+          instagram: string | null
+          website: string | null
+          is_resort: boolean
+          is_resort_partner: boolean
+          resort_infrastructure: Json | null
+          resort_active_highlight: string | null
+          resort_notice_board: string | null
+          resort_prices: Json | null
+          resort_main_species: string[] | null
+          open_tournaments_count: number
         }
       }
     }

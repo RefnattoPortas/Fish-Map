@@ -169,11 +169,14 @@ export async function syncPendingData(supabaseClient: any, userId: string) {
 
   let synced = 0
   let errors = 0
+  
+  // Mapeamento de IDs locais temporários para o novo UUID gerado no Supabase
+  const spotIdMap: Record<string, string> = {}
 
   // Sincronizar spots
   for (const spot of pendingSpots) {
     try {
-      const { error } = await supabaseClient.from('spots').insert({
+      const { data: newSpot, error } = await supabaseClient.from('spots').insert({
         user_id: userId,
         title: spot.title,
         description: spot.description,
@@ -183,12 +186,18 @@ export async function syncPendingData(supabaseClient: any, userId: string) {
         photo_url: spot.photo_url,
         fuzz_radius_m: spot.fuzz_radius_m,
       })
+      .select('id')
+      .single()
 
       if (error) throw error
+      if (newSpot) {
+        spotIdMap[spot.id] = newSpot.id // Salva o ID real retornado
+      }
+      
       await markSpotSynced(spot.id)
       synced++
-    } catch (err) {
-      console.error('[Sync] Erro ao sincronizar spot:', spot.id, err)
+    } catch (err: any) {
+      console.error('[Sync] Erro ao sincronizar spot:', spot.id, err.message || err)
       errors++
     }
   }
@@ -196,11 +205,16 @@ export async function syncPendingData(supabaseClient: any, userId: string) {
   // Sincronizar capturas
   for (const capture of pendingCaptures) {
     try {
+      // Se a captura pertencer a um spot criado offline, substitui pelo ID real no DB
+      const realSpotId = capture.spot_id && spotIdMap[capture.spot_id] 
+                          ? spotIdMap[capture.spot_id] 
+                          : capture.spot_id
+
       const { data: captureData, error: captureError } = await supabaseClient
         .from('captures')
         .insert({
           user_id: userId,
-          spot_id: capture.spot_id,
+          spot_id: realSpotId,
           species: capture.species,
           weight_kg: capture.weight_kg,
           length_cm: capture.length_cm,
@@ -228,8 +242,8 @@ export async function syncPendingData(supabaseClient: any, userId: string) {
 
       await markCaptureSynced(capture.id)
       synced++
-    } catch (err) {
-      console.error('[Sync] Erro ao sincronizar captura:', capture.id, err)
+    } catch (err: any) {
+      console.error('[Sync] Erro ao sincronizar captura:', capture.id, err.message || err)
       errors++
     }
   }

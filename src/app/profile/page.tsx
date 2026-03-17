@@ -13,8 +13,10 @@ export default function ProfilePage() {
     total_captures: 0,
     total_weight: 0,
     unique_species: 0,
-    favorite_spot: '---'
+    medals_count: 0
   })
+  const [achievements, setAchievements] = useState<any[]>([])
+  const [inscriptions, setInscriptions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -36,10 +38,43 @@ export default function ProfilePage() {
         .single()
       setProfile(profileData)
 
-      // Fetch Stats
+      // Fetch Achievements
+      const { data: userAch } = await supabase
+        .from('user_achievements')
+        .select('*, achievements(*)')
+        .eq('user_id', user.id)
+      
+      if (userAch) {
+        setAchievements(userAch)
+      }
+
+      // Fetch Tournament Inscriptions
+      const { data: userInscriptions } = await supabase
+        .from('tournament_participants')
+        .select(`
+          id,
+          registered_at,
+          tournaments(
+            id,
+            title,
+            event_date,
+            status,
+            fishing_resorts(
+              spots(title)
+            )
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('registered_at', { ascending: false })
+      
+      if (userInscriptions) {
+        setInscriptions(userInscriptions)
+      }
+
+      // Fetch Captures for Stats
       const { data: captures } = await supabase
         .from('captures')
-        .select('species, weight_kg, spot_id')
+        .select('species, weight_kg')
         .eq('user_id', user.id)
 
       if (captures && captures.length > 0) {
@@ -47,18 +82,11 @@ export default function ProfilePage() {
         const uniqueSpecies = new Set(captureList.map((c: any) => c.species)).size
         const totalWeight = captureList.reduce((acc: number, c: any) => acc + (c.weight_kg || 0), 0)
         
-        // Simples favorito (id do ponto mais comum)
-        const spotCounts: Record<string, number> = {}
-        captureList.forEach((c: any) => {
-          if (c.spot_id) spotCounts[c.spot_id] = (spotCounts[c.spot_id] || 0) + 1
-        })
-        const favoriteSpotId = Object.entries(spotCounts).sort((a, b) => b[1] - a[1])[0]?.[0]
-        
         setStats({
           total_captures: captures.length,
           total_weight: Math.round(totalWeight * 10) / 10,
           unique_species: uniqueSpecies,
-          favorite_spot: favoriteSpotId ? 'Calculando...' : '---'
+          medals_count: userAch?.length || 0
         })
       }
     }
@@ -68,7 +96,29 @@ export default function ProfilePage() {
   if (loading) return null
 
   const userRank = profile ? getRankByLevel(profile.level || 1) : null
-  const xpProgress = profile ? (profile.xp_points % 500) / 5 : 0
+  
+  // Cálculo dinâmico do XP para a barra de progresso
+  const calculateXPProgress = () => {
+    if (!profile) return 0
+    const xp = profile.xp_points || 0
+    
+    if (xp <= 500) return (xp / 500) * 100
+    if (xp <= 2000) return ((xp - 500) / 1500) * 100
+    if (xp <= 5000) return ((xp - 2000) / 3000) * 100
+    return 100
+  }
+
+  const getNextLevelXP = () => {
+    if (!profile) return 500
+    const xp = profile.xp_points || 0
+    if (xp <= 500) return 500
+    if (xp <= 2000) return 2000
+    if (xp <= 5000) return 5000
+    return xp
+  }
+
+  const xpProgress = calculateXPProgress()
+  const nextXP = getNextLevelXP()
 
   return (
     <div className="flex w-screen h-screen overflow-hidden bg-[#0a0f1a]">
@@ -128,7 +178,7 @@ export default function ProfilePage() {
                 <div className="pt-4 max-w-sm mx-auto md:mx-0">
                    <div className="flex justify-between items-end mb-2">
                      <span className="text-[10px] font-black text-accent uppercase tracking-widest">Progresso XP</span>
-                     <span className="text-[10px] font-bold text-white/40">{profile?.xp_points} / {((Math.floor((profile?.xp_points || 0) / 500) + 1) * 500)} XP</span>
+                     <span className="text-[10px] font-bold text-white/40">{profile?.xp_points} / {nextXP} XP</span>
                    </div>
                    <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
                       <div 
@@ -147,7 +197,7 @@ export default function ProfilePage() {
               { label: 'Capturas', value: stats.total_captures, icon: Fish, color: '#00d4aa' },
               { label: 'Peso Total (kg)', value: stats.total_weight, icon: TrendingUp, color: '#3b82f6' },
               { label: 'Espécies Únicas', value: stats.unique_species, icon: Star, color: '#f59e0b' },
-              { label: 'Medalhas', value: 0, icon: Award, color: '#ec4899' },
+              { label: 'Medalhas', value: stats.medals_count, icon: Award, color: '#ec4899' },
             ].map((stat) => (
               <div key={stat.label} className="glass p-6 rounded-[28px] border border-white/5 space-y-3 hover:bg-white/[0.05] transition-all group">
                 <div 
@@ -166,39 +216,70 @@ export default function ProfilePage() {
 
           {/* Bottom Sections */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-             {/* Recent Activity Placeholder */}
+             
+             {/* Minhas Inscrições (Torneios) */}
              <div className="glass p-8 rounded-[32px] border border-white/5 space-y-6">
                 <h3 className="text-white font-black text-sm uppercase tracking-widest flex items-center gap-2">
-                  <Clock size={16} className="text-accent" /> Atividade Recente
+                  <Trophy size={16} className="text-accent" /> Minhas Inscrições
                 </h3>
                 <div className="space-y-4">
-                  <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-2xl">
-                    <History className="mx-auto text-gray-800 mb-4" size={40} />
-                    <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Nenhuma atividade registrada</p>
-                  </div>
+                  {inscriptions.length > 0 ? inscriptions.map((insc: any) => (
+                    <div key={insc.id} className="flex items-center justify-between p-4 bg-white/[0.03] rounded-2xl border border-white/5 relative overflow-hidden group">
+                       <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
+                          <Trophy size={40} className="text-accent" />
+                       </div>
+                       <div className="flex flex-col z-10">
+                          <p className="text-white font-bold text-sm">{insc.tournaments?.title}</p>
+                          <p className="text-[10px] text-gray-500 uppercase font-black">
+                            <MapPin size={10} className="inline mr-1" /> {insc.tournaments?.fishing_resorts?.spots?.title || 'Local Oficial'}
+                          </p>
+                       </div>
+                       <div className="text-right z-10 flex flex-col items-end">
+                          <span className={`badge ${insc.tournaments?.status === 'open' ? 'badge-accent' : 'badge-gray'} text-[8px] px-2 py-0.5 mb-1`}>
+                            {insc.tournaments?.status === 'open' ? 'ABERTO' : 'ENCERRADO'}
+                          </span>
+                          <p className="text-[10px] text-accent font-black">{new Date(insc.tournaments?.event_date).toLocaleDateString('pt-BR')}</p>
+                       </div>
+                    </div>
+                  )) : (
+                    <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-2xl">
+                      <Trophy className="mx-auto text-gray-800 mb-4" size={40} />
+                      <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Nenhum evento reservado</p>
+                    </div>
+                  )}
                 </div>
              </div>
+
 
              {/* Personal Records Placeholder */}
              <div className="glass p-8 rounded-[32px] border border-white/5 space-y-6">
                 <h3 className="text-white font-black text-sm uppercase tracking-widest flex items-center gap-2">
                   <Trophy size={16} className="text-amber-500" /> Recordes Pessoais
                 </h3>
-                <div className="space-y-4">
-                   <div className="flex items-center justify-between p-4 bg-white/[0.03] rounded-2xl border border-white/5">
-                      <div className="flex items-center gap-3">
-                         <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500">
-                            <Star size={18} />
-                         </div>
-                         <div>
-                            <p className="text-white font-bold text-sm">Peixe Mais Pesado</p>
-                            <p className="text-[10px] text-gray-500 uppercase font-black">Em breve</p>
-                         </div>
+                <div className="grid grid-cols-1 gap-4">
+                   {achievements.length > 0 ? achievements.map((ua: any) => (
+                      <div key={ua.id} className="flex items-center justify-between p-4 bg-white/[0.03] rounded-2xl border border-white/5">
+                        <div className="flex items-center gap-3">
+                           <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center text-accent">
+                              {ua.achievements.icon_name === 'Fish' && <Fish size={18} />}
+                              {ua.achievements.icon_name === 'Trophy' && <Trophy size={18} />}
+                              {ua.achievements.icon_name === 'MapPin' && <MapPin size={18} />}
+                           </div>
+                           <div>
+                              <p className="text-white font-bold text-sm">{ua.achievements.name}</p>
+                              <p className="text-[10px] text-gray-500 uppercase font-black">{ua.achievements.description}</p>
+                           </div>
+                        </div>
+                        <div className="text-right">
+                           <p className="text-[10px] text-accent font-black">{new Date(ua.earned_at).toLocaleDateString('pt-BR')}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                         <p className="text-white font-black text-lg">---</p>
+                   )) : (
+                      <div className="py-10 text-center border-2 border-dashed border-white/5 rounded-2xl">
+                         <Award className="mx-auto text-gray-800 mb-2" size={32} />
+                         <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Nenhuma medalha conquistada</p>
                       </div>
-                   </div>
+                   )}
                 </div>
              </div>
           </div>

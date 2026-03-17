@@ -34,15 +34,18 @@ export interface MapFilters {
   waterType: string
   showOnlyVerified: boolean
   showOnlyPublic: boolean
+  showOnlyResorts: boolean
+  hidePublic: boolean
 }
 
 interface MapFiltersBarProps {
   filters: MapFilters
   onChange: (filters: MapFilters) => void
   spotCount: number
+  user: any
 }
 
-export default function MapFiltersBar({ filters, onChange, spotCount }: MapFiltersBarProps) {
+export default function MapFiltersBar({ filters, onChange, spotCount, user }: MapFiltersBarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [speciesSearch, setSpeciesSearch] = useState(filters.species)
 
@@ -54,7 +57,8 @@ export default function MapFiltersBar({ filters, onChange, spotCount }: MapFilte
     filters.lureType ||
     filters.waterType ||
     filters.showOnlyVerified ||
-    filters.showOnlyPublic
+    filters.showOnlyPublic ||
+    filters.showOnlyResorts
 
   const resetAll = () => {
     setSpeciesSearch('')
@@ -64,6 +68,8 @@ export default function MapFiltersBar({ filters, onChange, spotCount }: MapFilte
       waterType: '',
       showOnlyVerified: false,
       showOnlyPublic: false,
+      showOnlyResorts: false,
+      hidePublic: false,
     })
   }
 
@@ -206,31 +212,43 @@ export default function MapFiltersBar({ filters, onChange, spotCount }: MapFilte
           </div>
 
           {/* Toggles */}
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {[
               { key: 'showOnlyVerified', label: '✓ Só verificados' },
               { key: 'showOnlyPublic',   label: '👁️ Só públicos' },
-            ].map(opt => (
-              <button
-                key={opt.key}
-                onClick={() => set(opt.key as keyof MapFilters, !filters[opt.key as keyof MapFilters])}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 8,
-                  border: '1px solid',
-                  borderColor: filters[opt.key as keyof MapFilters] ? 'var(--color-accent-primary)' : 'var(--color-border)',
-                  background: filters[opt.key as keyof MapFilters] ? 'var(--color-accent-glow)' : 'transparent',
-                  color: filters[opt.key as keyof MapFilters] ? 'var(--color-accent-primary)' : 'var(--color-text-secondary)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  flexShrink: 0,
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
+              { key: 'showOnlyResorts',  label: '🏡 Pesqueiros' },
+              { key: 'hidePublic',       label: '🔒 Ocultar Públicos', isPro: true },
+            ].map(opt => {
+              const isActive = (filters as any)[opt.key]
+              const isProUser = (user as any)?.profile?.subscription_tier === 'pro' || (user as any)?.profile?.subscription_tier === 'partner'
+              
+              return (
+                <button
+                  key={opt.key}
+                  disabled={opt.isPro && !isProUser}
+                  onClick={() => set(opt.key as keyof MapFilters, !isActive)}
+                  className="transition-all"
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    border: '1px solid',
+                    borderColor: isActive ? 'var(--color-accent-primary)' : 'var(--color-border)',
+                    background: isActive ? 'var(--color-accent-glow)' : 'transparent',
+                    color: isActive ? 'var(--color-accent-primary)' : 'var(--color-text-secondary)',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: opt.isPro && !isProUser ? 'not-allowed' : 'pointer',
+                    opacity: opt.isPro && !isProUser ? 0.4 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                >
+                  {opt.label}
+                  {opt.isPro && !isProUser && <span className="text-[8px] bg-amber-500 text-dark px-1 rounded-sm font-black">PRO</span>}
+                </button>
+              )
+            })}
           </div>
         </div>
       )}

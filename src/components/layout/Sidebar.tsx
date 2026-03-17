@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import {
   Map, Fish, BookOpen, Trophy, User, Settings,
   ChevronRight, Wifi, WifiOff, Plus, Bell, LogOut,
-  LogIn
+  LogIn, Award, Crown
 } from 'lucide-react'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton'
@@ -17,7 +17,8 @@ import { getRankByLevel } from '@/lib/utils/ranks'
 const navItems = [
   { href: '/',           icon: Map,      label: 'Mapa',           id: 'nav-map' },
   { href: '/captures',   icon: Fish,     label: 'Minhas Capturas', id: 'nav-captures' },
-  { href: '/leaderboard', icon: Trophy,   label: 'Leaderboard',    id: 'nav-leaderboard' },
+  { href: '/leaderboard', icon: Award,   label: 'Leaderboard',    id: 'nav-leaderboard' },
+  { href: '/events',      icon: Trophy,  label: 'Torneios & Eventos', id: 'nav-tournaments' },
   { href: '/logbook',    icon: BookOpen, label: 'Diário de Pesca', id: 'nav-logbook' },
 ]
 
@@ -36,6 +37,7 @@ export default function Sidebar({
   const [expanded, setExpanded] = useState(false)
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [profile, setProfile] = useState<any>(null)
+  const [isResortOwner, setIsResortOwner] = useState(false)
 
   useEffect(() => {
     const supabase = getSupabaseClient()
@@ -58,9 +60,25 @@ export default function Sidebar({
     // Listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else setProfile(null)
+      if (session?.user) {
+        fetchProfile(session.user.id)
+        checkResortOwner(session.user.id)
+      } else {
+        setProfile(null)
+        setIsResortOwner(false)
+      }
     })
+
+    const checkResortOwner = async (uid: string) => {
+      const { data } = await supabase
+        .from('fishing_resorts')
+        .select('id, spots!inner(user_id)')
+        .eq('spots.user_id', uid)
+        .limit(1)
+      setIsResortOwner(!!data && data.length > 0)
+    }
+
+    if (user) checkResortOwner(user.id)
 
     return () => {
       subscription.unsubscribe()
@@ -135,7 +153,9 @@ export default function Sidebar({
                   style={{ 
                     width: expanded ? 48 : 36, 
                     height: expanded ? 48 : 36, 
-                    border: '2px solid var(--color-accent-primary)' 
+                    border: profile?.subscription_tier === 'pro' || profile?.subscription_tier === 'partner'
+                        ? '2px solid #fbbf24'
+                        : '2px solid var(--color-accent-primary)' 
                   }}
                 >
                   {user.user_metadata.avatar_url ? (
@@ -146,6 +166,11 @@ export default function Sidebar({
                     </div>
                   )}
                 </div>
+                {(profile?.subscription_tier === 'pro' || profile?.subscription_tier === 'partner') && (
+                  <div className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center border-2 border-[#0a0f1a] shadow-lg animate-bounce z-10">
+                    <Crown size={10} className="text-dark fill-dark" />
+                  </div>
+                )}
                 <div 
                   className="absolute -bottom-1 -right-1 text-[#000] text-[9px] font-black px-1.5 py-0.5 rounded-md border border-[#0a0f1a] shadow-lg"
                   style={{ backgroundColor: userRank.color }}
@@ -212,6 +237,20 @@ export default function Sidebar({
               </Link>
             )
           })}
+          {isResortOwner && (
+            <Link
+              href="/resort-admin"
+              className={`sidebar-item ${pathname === '/resort-admin' ? 'active' : ''}`}
+              style={{ background: 'rgba(0, 212, 170, 0.05)', border: '1px solid rgba(0, 212, 170, 0.1)' }}
+            >
+              <Settings size={20} className="text-accent" />
+              {expanded && (
+                <span className="fade-in font-black text-accent" style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  Admin Pesqueiro
+                </span>
+              )}
+            </Link>
+          )}
         </nav>
 
         {/* Separador */}

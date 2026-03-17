@@ -5,11 +5,17 @@ import { X, MapPin, Info, Lock, Globe, Users, Waves, Save, Camera } from 'lucide
 
 interface NewSpotFormProps {
   userId: string
+  isOnline: boolean
   onClose: () => void
   onSuccess?: () => void
+  initialLat?: number
+  initialLng?: number
 }
 
-export default function NewSpotForm({ userId, onClose, onSuccess }: NewSpotFormProps) {
+import { getSupabaseClient } from '@/lib/supabase/client'
+import { savePendingSpot } from '@/lib/offline/indexeddb'
+
+export default function NewSpotForm({ userId, isOnline, onClose, onSuccess, initialLat, initialLng }: NewSpotFormProps) {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [data, setData] = useState({
@@ -17,28 +23,64 @@ export default function NewSpotForm({ userId, onClose, onSuccess }: NewSpotFormP
     description: '',
     privacy_level: 'public' as 'public' | 'community' | 'private',
     water_type: 'river' as 'river' | 'lake' | 'reservoir' | 'sea' | 'other',
-    lat: -15.7801,
-    lng: -47.9292,
+    lat: initialLat || -15.7801,
+    lng: initialLng || -47.9292,
   })
+
+  const supabase = getSupabaseClient() as any
 
   const handleSave = async () => {
     if (!data.title) return
     setLoading(true)
 
+    const spotPayload = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      title: data.title,
+      description: data.description || null,
+      lat: data.lat,
+      lng: data.lng,
+      privacy_level: data.privacy_level,
+      water_type: data.water_type,
+      photo_url: null,
+      fuzz_radius_m: 0,
+      created_locally_at: new Date().toISOString(),
+    }
+
     try {
-      // Simulação de delay
-      await new Promise(resolve => setTimeout(resolve, 800))
+      // Se for guest, salvamos offline independente da conexão para evitar erro de UUID
+      const isGuest = userId === 'guest-user'
       
-      // Em produção, aqui iria o insert no Supabase
-      console.log('Salvando novo ponto:', data)
-      
+      if (isOnline && !isGuest) {
+        const { error } = await supabase
+          .from('spots')
+          .insert([{
+            user_id: userId,
+            title: data.title,
+            description: data.description || null,
+            privacy_level: data.privacy_level,
+            water_type: data.water_type,
+            location: `POINT(${data.lng} ${data.lat})`,
+            is_active: true
+          }])
+
+        if (error) throw error
+      } else {
+        // Salvar offline (IndexedDB)
+        await savePendingSpot(spotPayload)
+      }
+
       setSuccess(true)
       setTimeout(() => {
         onSuccess?.()
         onClose()
       }, 1500)
-    } catch (err) {
-      console.error('Erro ao salvar ponto:', err)
+    } catch (error: any) {
+      console.error('Erro ao salvar ponto:', error)
+      // Fallback offline em caso de erro
+      await savePendingSpot(spotPayload)
+      setSuccess(true)
+      setTimeout(() => { onSuccess?.(); onClose() }, 1500)
     } finally {
       setLoading(false)
     }
