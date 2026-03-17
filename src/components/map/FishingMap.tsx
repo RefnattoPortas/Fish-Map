@@ -34,6 +34,7 @@ interface FishingMapProps {
   center?: [number, number]
   zoom?: number
   onMapClick?: (lat: number, lng: number) => void
+  theme?: 'dark' | 'light'
 }
 
 export default function FishingMap({
@@ -46,6 +47,7 @@ export default function FishingMap({
   center = [-15.7801, -47.9292], // Brasília como padrão
   zoom = 6,
   onMapClick,
+  theme = 'light',
 }: FishingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletMapRef = useRef<LeafletMap | null>(null)
@@ -112,11 +114,16 @@ export default function FishingMap({
           attributionControl: false,
         })
 
-        // Tile layer (CartoDB Voyager - claro mas discreto)
-        L.tileLayer(
-          'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-          { maxZoom: 19, subdomains: 'abcd' }
-        ).addTo(mapInstance)
+        // Tile layer (CartoDB)
+        const tileUrl = theme === 'dark'
+          ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+          : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+
+        const baseLayer = L.tileLayer(tileUrl, { maxZoom: 19, subdomains: 'abcd' })
+        baseLayer.addTo(mapInstance)
+        
+        // Guardar ref para poder mudar
+        ;(mapInstance as any)._baseLayer = baseLayer
 
         // Atribuição personalizada discreta
         L.control.attribution({
@@ -148,7 +155,25 @@ export default function FishingMap({
       }
       setIsLoaded(false)
     }
-  }, []) // Dependências vazias para inicializar apenas uma vez
+  }, [center, zoom]) // Se mudar centro/zoom recria o mapa
+
+  // Quando mudar o tema, recarregar o mapa ou trocar apenas a camada (melhor desempenho é mudar o URL do tileLayer se L.tileLayer tem setUrl, senao remove a grid_layer e add de novo)
+  useEffect(() => {
+    if (!isLoaded || !leafletMapRef.current) return
+    const map = leafletMapRef.current
+    const tileUrl = theme === 'dark'
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+      
+    const oldLayer = (map as any)._baseLayer
+    if (oldLayer) map.removeLayer(oldLayer)
+
+    import('leaflet').then(L => {
+      const newLayer = L.default.tileLayer(tileUrl, { maxZoom: 19, subdomains: 'abcd' }).addTo(map)
+      ;(map as any)._baseLayer = newLayer
+    })
+
+  }, [theme, isLoaded])
 
   // Atualizar posição do usuário no mapa
   useEffect(() => {

@@ -43,9 +43,10 @@ interface MapFiltersBarProps {
   onChange: (filters: MapFilters) => void
   spotCount: number
   user: any
+  theme?: 'dark' | 'light'
 }
 
-export default function MapFiltersBar({ filters, onChange, spotCount, user }: MapFiltersBarProps) {
+export default function MapFiltersBar({ filters, onChange, spotCount, user, theme = 'light' }: MapFiltersBarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [speciesSearch, setSpeciesSearch] = useState(filters.species)
 
@@ -87,6 +88,11 @@ export default function MapFiltersBar({ filters, onChange, spotCount, user }: Ma
         minWidth: 320,
         maxWidth: 500,
         width: 'calc(100% - 140px)',
+        // Se for tema claro, sobrepor o glass padrão com branco
+        background: theme === 'light' ? 'rgba(255, 255, 255, 0.95)' : undefined,
+        borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : undefined,
+        color: theme === 'light' ? '#111827' : undefined,
+        boxShadow: theme === 'light' ? '0 8px 32px rgba(0, 0, 0, 0.1)' : undefined,
       }}
     >
       {/* Barra principal */}
@@ -103,7 +109,14 @@ export default function MapFiltersBar({ filters, onChange, spotCount, user }: Ma
               setSpeciesSearch(e.target.value)
               set('species', e.target.value)
             }}
-            style={{ paddingLeft: 32, minHeight: 38, fontSize: 13 }}
+            style={{ 
+              paddingLeft: 32, 
+              minHeight: 38, 
+              fontSize: 13,
+              background: theme === 'light' ? '#f3f4f6' : undefined,
+              borderColor: theme === 'light' ? '#e5e7eb' : undefined,
+              color: theme === 'light' ? '#111827' : undefined,
+            }}
           />
         </div>
 
@@ -144,7 +157,7 @@ export default function MapFiltersBar({ filters, onChange, spotCount, user }: Ma
             }}
             title="Limpar filtros"
           >
-            <X size={16} color="var(--color-text-muted)" />
+            <X size={16} color={theme === 'light' ? '#4b5563' : "var(--color-text-muted)"} />
           </button>
         )}
       </div>
@@ -159,9 +172,13 @@ export default function MapFiltersBar({ filters, onChange, spotCount, user }: Ma
               padding: '4px 10px',
               borderRadius: 20,
               border: '1px solid',
-              borderColor: filters.species === sp ? 'var(--color-accent-primary)' : 'var(--color-border)',
-              background: filters.species === sp ? 'var(--color-accent-glow)' : 'transparent',
-              color: filters.species === sp ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
+              borderColor: filters.species === sp ? 'var(--color-accent-primary)' : (theme === 'light' ? '#e5e7eb' : 'var(--color-border)'),
+              background: filters.species === sp 
+                ? (theme === 'light' ? '#00d4aa22' : 'var(--color-accent-glow)') 
+                : (theme === 'light' ? '#f9fafb' : 'transparent'),
+              color: filters.species === sp 
+                ? (theme === 'light' ? '#00b38f' : 'var(--color-accent-primary)') 
+                : (theme === 'light' ? '#4b5563' : 'var(--color-text-muted)'),
               fontSize: 11,
               fontWeight: 600,
               cursor: 'pointer',
@@ -176,11 +193,11 @@ export default function MapFiltersBar({ filters, onChange, spotCount, user }: Ma
 
       {/* Filtros avançados expandíveis */}
       {isExpanded && (
-        <div className="fade-in" style={{ padding: '0 14px 14px', borderTop: '1px solid var(--color-border)', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="fade-in" style={{ padding: '0 14px 14px', borderTop: `1px solid ${theme === 'light' ? '#e5e7eb' : 'var(--color-border)'}`, paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {/* Tipo de Isca */}
             <div>
-              <label className="label" style={{ marginBottom: 6 }}>🎣 Isca mais eficiente</label>
+              <label className="label" style={{ marginBottom: 6, color: theme === 'light' ? '#374151' : undefined }}>🎣 Isca mais eficiente</label>
               <select
                 id="filter-lure-type"
                 className="select"
@@ -196,7 +213,7 @@ export default function MapFiltersBar({ filters, onChange, spotCount, user }: Ma
 
             {/* Tipo de Água */}
             <div>
-              <label className="label" style={{ marginBottom: 6 }}>💧 Tipo de água</label>
+              <label className="label" style={{ marginBottom: 6, color: theme === 'light' ? '#374151' : undefined }}>💧 Tipo de água</label>
               <select
                 id="filter-water-type"
                 className="select"
@@ -232,9 +249,15 @@ export default function MapFiltersBar({ filters, onChange, spotCount, user }: Ma
                     padding: '6px 12px',
                     borderRadius: 8,
                     border: '1px solid',
-                    borderColor: isActive ? 'var(--color-accent-primary)' : 'var(--color-border)',
-                    background: isActive ? 'var(--color-accent-glow)' : 'transparent',
-                    color: isActive ? 'var(--color-accent-primary)' : 'var(--color-text-secondary)',
+                    borderColor: isActive 
+                        ? (theme === 'light' ? '#00b38f' : 'var(--color-accent-primary)') 
+                        : (theme === 'light' ? '#e5e7eb' : 'var(--color-border)'),
+                    background: isActive 
+                        ? (theme === 'light' ? '#00d4aa22' : 'var(--color-accent-glow)') 
+                        : (theme === 'light' ? '#f9fafb' : 'transparent'),
+                    color: isActive 
+                        ? (theme === 'light' ? '#00b38f' : 'var(--color-accent-primary)') 
+                        : (theme === 'light' ? '#6b7280' : 'var(--color-text-secondary)'),
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: opt.isPro && !isProUser ? 'not-allowed' : 'pointer',
@@ -254,8 +277,8 @@ export default function MapFiltersBar({ filters, onChange, spotCount, user }: Ma
       )}
 
       {/* Contagem de resultados */}
-      <div style={{ padding: '6px 14px 10px', borderTop: isExpanded ? '1px solid var(--color-border)' : 'none' }}>
-        <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+      <div style={{ padding: '6px 14px 10px', borderTop: isExpanded ? `1px solid ${theme === 'light' ? '#e5e7eb' : 'var(--color-border)'}` : 'none' }}>
+        <span style={{ fontSize: 11, color: theme === 'light' ? '#6b7280' : 'var(--color-text-muted)' }}>
           {spotCount} ponto{spotCount !== 1 ? 's' : ''} {hasActiveFilters ? 'encontrado(s)' : 'no mapa'}
         </span>
       </div>

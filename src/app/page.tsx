@@ -83,6 +83,13 @@ function HomeContent() {
   const [user, setUser] = useState<any>(null)
   const [showPaywall, setShowPaywall] = useState(false)
   const [paywallFeature, setPaywallFeature] = useState('')
+  const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('light') // Padrão light como falado
+
+  // Ler tema local do mapa
+  useEffect(() => {
+    const saved = localStorage.getItem('wikifish_map_theme') as 'dark' | 'light'
+    if (saved) setMapTheme(saved)
+  }, [])
 
   // Monitorar auth
   useEffect(() => {
@@ -302,6 +309,7 @@ function HomeContent() {
           onChange={setFilters}
           spotCount={filteredSpots.length}
           user={user}
+          theme={mapTheme}
         />
 
         {activeHighlight && (
@@ -322,6 +330,7 @@ function HomeContent() {
                 onMapClick={handleMapClick}
                 selectedSpotId={activeSpotId}
                 filterLureType={filters.lureType}
+                theme={mapTheme}
               />
 
         {creationMode && (
