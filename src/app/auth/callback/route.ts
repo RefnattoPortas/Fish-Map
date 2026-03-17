@@ -33,7 +33,8 @@ export async function GET(request: Request) {
       }
     )
     const { error, data } = await supabase.auth.exchangeCodeForSession(code)
-    
+    let authError = error?.message
+
     if (!error && data?.user) {
       const user = data.user
       // Sincronizar dados do Google com a tabela pública profiles
@@ -49,9 +50,14 @@ export async function GET(request: Request) {
         .select()
 
       return NextResponse.redirect(`${origin}${next}`)
+    } else if (!authError) {
+      authError = 'No user session returned after exchanging code'
     }
+
+    // return the user to an error page with instructions and details
+    return NextResponse.redirect(`${origin}/auth/auth-code-error?details=${encodeURIComponent(authError || 'unknown_error')}`)
   }
 
-  // return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+  // Falha inicial: sem código e etc
+  return NextResponse.redirect(`${origin}/auth/auth-code-error?details=no_auth_code_provided`)
 }
