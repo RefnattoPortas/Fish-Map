@@ -159,7 +159,7 @@ export default function SpotDetailsView({
       {/* Backdrop */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-[1100] bg-black/60 backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 z-[1100] bg-black/80 transition-opacity"
           onClick={onClose}
         />
       )}

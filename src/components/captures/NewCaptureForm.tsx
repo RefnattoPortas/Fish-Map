@@ -238,14 +238,7 @@ export default function NewCaptureForm({
 
   return (
     <div
-      className="fixed inset-0 z-[1500] flex items-center justify-center p-4"
-      style={{ 
-        background: 'rgba(0,0,0,0.65)', 
-        backdropFilter: 'blur(4px)', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center' 
-      }}
+      className="fixed inset-0 z-[1500] flex items-center justify-center p-2 sm:p-4 bg-black/80"
     >
       <div
         className="glass-elevated fade-in-up"
