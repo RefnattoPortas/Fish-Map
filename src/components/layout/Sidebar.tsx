@@ -94,9 +94,10 @@ export default function Sidebar({
   const xpProgress = Math.min((userXP % 500) / 500 * 100, 100)
 
   return (
-    <aside
-      id="sidebar"
-      className="glass flex flex-col border-r transition-all duration-300 z-30 relative"
+    <>
+      <aside
+        id="sidebar"
+        className="glass flex flex-col border-r transition-all duration-300 z-30 relative"
       style={{
         width: expanded ? 'var(--sidebar-expanded)' : 'var(--sidebar-width)',
         minWidth: expanded ? 'var(--sidebar-expanded)' : 'var(--sidebar-width)',
@@ -340,15 +341,16 @@ export default function Sidebar({
           )}
         </div>
       </div>
-      {showLanding && (
-        <B2BLanding 
-           onClose={() => setShowLanding(false)} 
-           onStart={() => {
-              setShowLanding(false)
-              window.location.href = '/profile?tab=business&start=true'
-           }}
-        />
-      )}
     </aside>
+    {showLanding && (
+      <B2BLanding 
+         onClose={() => setShowLanding(false)} 
+         onStart={() => {
+            setShowLanding(false)
+            window.location.href = '/profile?tab=business&start=true'
+         }}
+      />
+    )}
+    </>
   )
 }
