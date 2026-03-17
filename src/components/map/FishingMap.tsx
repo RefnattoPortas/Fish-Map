@@ -305,7 +305,13 @@ export default function FishingMap({
       {isLoaded && (
         <div
           className="glass absolute"
-          style={{ bottom: 24, left: 16, padding: '10px 14px', borderRadius: 12, zIndex: 900 }}
+          style={{ 
+            bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', 
+            left: 16, 
+            padding: '10px 14px', 
+            borderRadius: 12, 
+            zIndex: 900 
+          }}
         >
           <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>
             Legenda

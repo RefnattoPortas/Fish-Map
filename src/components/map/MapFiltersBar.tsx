@@ -73,7 +73,7 @@ export default function MapFiltersBar({ filters, onChange, spotCount }: MapFilte
       className="glass"
       style={{
         position: 'absolute',
-        top: 16,
+        top: 'calc(16px + env(safe-area-inset-top, 0px))',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 900,

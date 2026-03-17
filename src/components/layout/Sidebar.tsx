@@ -62,12 +62,11 @@ export default function Sidebar({
   return (
     <aside
       id="sidebar"
-      className="glass flex flex-col border-r transition-all duration-300 z-30 relative"
+      className="glass flex flex-col border-r transition-all duration-300 z-30 relative overflow-y-auto overflow-x-hidden"
       style={{
         width: expanded ? 'var(--sidebar-expanded)' : 'var(--sidebar-width)',
         minWidth: expanded ? 'var(--sidebar-expanded)' : 'var(--sidebar-width)',
-        height: '100%',
-        overflow: 'hidden',
+        height: '100dvh',
       }}
     >
       {/* Logo */}
@@ -165,7 +164,7 @@ export default function Sidebar({
       <div className="divider mx-2 my-2" />
 
       {/* Status de conexão + sync */}
-      <div className="px-2 pb-6" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 24px)' }}>
+      <div className="px-2 sidebar-footer">
         <div
           className="sidebar-item"
           style={{ gap: 10 }}
