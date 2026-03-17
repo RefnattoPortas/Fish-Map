@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { X, MapPin, Save, Utensils, Wifi, Warehouse, Anchor, Car, Clock, Instagram, Phone, Globe, Star, Fish, Camera, Plus } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, MapPin, Save, Utensils, Wifi, Warehouse, Anchor, Car, Clock, Instagram, Phone, Globe, Star, Fish, Camera, Plus, MessageSquare } from 'lucide-react'
 import { getSupabaseClient } from '@/lib/supabase/client'
-import type { Database } from '@/types/database'
 
 interface NewResortFormProps {
   userId: string
@@ -20,6 +19,8 @@ const FISH_SPECIES = [
 
 export default function NewResortForm({ userId, isOnline, initialLat, initialLng, onClose, onSuccess }: NewResortFormProps) {
   const [loading, setLoading] = useState(false)
+  const [checkingTier, setCheckingTier] = useState(true)
+  const [userTier, setUserTier] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [data, setData] = useState({
     title: '',
@@ -28,6 +29,7 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
     phone: '',
     instagram: '',
     website: '',
+    team_message: '',
     infra: {
       restaurante: false,
       banheiros: false,
@@ -47,7 +49,20 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
     lng: initialLng || -47.9292
   })
 
-  const supabase = getSupabaseClient() as any // Workaround para problemas de inferência circular no workspace
+  const supabase = getSupabaseClient() as any
+
+  useEffect(() => {
+    const fetchTier = async () => {
+      if (!userId || userId === 'guest-user') {
+        setCheckingTier(false)
+        return
+      }
+      const { data } = await supabase.from('profiles').select('subscription_tier').eq('id', userId).single()
+      setUserTier(data?.subscription_tier || 'free')
+      setCheckingTier(false)
+    }
+    fetchTier()
+  }, [userId])
 
   const toggleInfra = (key: keyof typeof data.infra) => {
     setData(d => ({
@@ -68,7 +83,6 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
   const handleSave = async () => {
     if (!data.title) return
     
-    // Se for guest, impedimos cadastro de empresa
     if (userId === 'guest-user') {
       alert('Cadastro de pesqueiros oficiais requer uma conta de parceiro. Por favor, faça login.')
       return
@@ -82,45 +96,37 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
     setLoading(true)
 
     try {
-      // 1. Criar o Spot
-      const { data: spot, error: spotError } = await supabase
-        .from('spots')
-        .insert([{
-          user_id: userId,
-          title: data.title,
-          description: data.description || null,
-          privacy_level: 'public' as any,
-          water_type: 'lake' as any,
-          location: `POINT(${data.lng} ${data.lat})`,
-          is_active: true
-        }])
-        .select()
-        .single()
-
-      if (spotError) throw spotError
-
-      // 2. Criar o Resort vinculado
+      // Criar o Resort diretamente (estrutura real do banco: owner_id + name + location)
       const { error: resortError } = await supabase
         .from('fishing_resorts')
         .insert([{
-          spot_id: (spot as any).id,
+          owner_id: userId,
+          name: data.title,
+          description: data.description || null,
+          location: `POINT(${data.lng} ${data.lat})`,
           infrastructure: data.infra as any,
-          opening_hours: data.opening_hours || null,
+          opening_hours: { text: data.opening_hours } as any,
           prices: data.prices as any,
           phone: data.phone || null,
           instagram: data.instagram || null,
           website: data.website || null,
-          is_partner: data.is_partner,
+          is_partner: false, // Sempre começa como false, aguarda aprovação
           main_species: data.main_species
         }])
 
       if (resortError) throw resortError
 
+      // Se há mensagem para a equipe, registra como notificação interna (opcional)
+      if (data.team_message) {
+        console.log('[WikiFish] Mensagem recebida do proprietário:', data.team_message)
+        // Futuramente: enviar email para equipe WikiFish
+      }
+
       setSuccess(true)
       setTimeout(() => {
         onSuccess?.()
         onClose()
-      }, 1500)
+      }, 4000)
     } catch (err: any) {
       console.error('Erro ao salvar pesqueiro:', err)
       alert('Erro ao salvar: ' + err.message)
@@ -129,21 +135,58 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
     }
   }
 
+  // Tela de sucesso com a mensagem correta
   if (success) {
     return (
-      <div className="fixed inset-0 z-[1600] flex items-center justify-center p-4 bg-black/90">
-        <div className="glass-elevated fade-in" style={{ borderRadius: 24, padding: 48, textAlign: 'center', maxWidth: 360 }}>
-          <div style={{ fontSize: 64, marginBottom: 20 }}>🏡</div>
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--color-accent-primary)', marginBottom: 8 }}>
-            Pesqueiro Cadastrado!
-          </h2>
-          <p style={{ fontSize: 15, color: 'var(--color-text-secondary)' }}>
-            O estabelecimento foi adicionado ao mapa com sucesso.
-          </p>
+      <div className="fixed inset-0 z-[1600] flex items-center justify-center p-4 bg-black/95">
+        <div className="glass-elevated fade-in text-center p-12 max-w-md rounded-[40px] border border-accent/20 space-y-6">
+          <div className="text-7xl animate-bounce">🏡</div>
+          <div>
+            <h2 className="text-3xl font-black text-accent uppercase italic tracking-tighter mb-3">
+              Pesqueiro no Mapa!
+            </h2>
+            <p className="text-gray-300 text-base leading-relaxed">
+              Seu pesqueiro já está no mapa! Em breve entraremos em contato para{' '}
+              <span className="text-accent font-bold">ativar as funções premium</span>.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 px-6 py-4 bg-accent/10 rounded-2xl border border-accent/20 text-left">
+            <Star size={20} className="text-amber-400 fill-amber-400 shrink-0" />
+            <p className="text-sm text-gray-400">
+              Após a análise da nossa equipe, seu perfil será elevado para <strong className="text-amber-400">Parceiro Elite</strong>.
+            </p>
+          </div>
         </div>
       </div>
     )
   }
+
+  // Security Filter View — bloqueia usuários free e guests
+  if (!checkingTier && (userId === 'guest-user' || userTier === 'free')) {
+    return (
+      <div className="fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-black/90">
+        <div className="glass-elevated fade-in text-center p-12 max-w-sm rounded-[32px] border border-white/5">
+           <div className="w-20 h-20 bg-amber-500/10 rounded-3xl flex items-center justify-center text-amber-500 mx-auto mb-6">
+              <Star size={40} className="fill-current" />
+           </div>
+           <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-4">Acesso Restrito</h2>
+           <p className="text-gray-400 text-sm mb-8">
+             Apenas usuários com assinatura <span className="text-amber-500 font-bold italic underline">Elite ou Parceiro</span> podem registrar estabelecimentos oficiais no mapa.
+           </p>
+           <div className="space-y-3">
+              <button 
+                onClick={onClose} 
+                className="btn-secondary w-full py-3 rounded-2xl font-bold"
+              >
+                Voltar
+              </button>
+           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (checkingTier) return null
 
   return (
     <div className="fixed inset-0 z-[1500] flex items-center justify-center p-2 sm:p-4 bg-black/80">
@@ -173,29 +216,31 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
         {/* Form Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 28, display: 'flex', flexDirection: 'column', gap: 24 }} className="custom-scrollbar">
           
-          {/* Nome e Preços Básicos */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
-            <div>
-              <label className="label">Nome do Estabelecimento *</label>
-              <input 
-                className="input" 
-                placeholder="Ex: Pesqueiro do Japa" 
-                value={data.title}
-                onChange={e => setData(d => ({ ...d, title: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="label">Taxa Entrada</label>
-              <input 
-                className="input" 
-                placeholder="R$ 50,00"
-                value={data.prices.entry}
-                onChange={e => setData(d => ({ ...d, prices: { ...d.prices, entry: e.target.value } }))}
-              />
-            </div>
+          {/* Nome */}
+          <div>
+            <label className="label">Nome do Estabelecimento *</label>
+            <input 
+              className="input" 
+              placeholder="Ex: Pesqueiro do Japa" 
+              value={data.title}
+              onChange={e => setData(d => ({ ...d, title: e.target.value }))}
+            />
           </div>
 
-          {/* Infraestrutura (Requested: restaurante, banheiros, wi-fi, pousada, aluguel_equipamento, estacionamento) */}
+          {/* Descrição */}
+          <div>
+            <label className="label">Descrição do Pesqueiro</label>
+            <textarea 
+              className="input" 
+              placeholder="Fale sobre o local, estrutura, diferenciais..." 
+              value={data.description}
+              onChange={e => setData(d => ({ ...d, description: e.target.value }))}
+              rows={3}
+              style={{ resize: 'none' }}
+            />
+          </div>
+
+          {/* Infraestrutura */}
           <div>
             <label className="label">Infraestrutura Disponível</label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
@@ -285,6 +330,18 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
             </div>
           </div>
 
+          {/* Taxa de Entrada */}
+          <div>
+            <label className="label">Taxa de Entrada</label>
+            <input 
+              className="input" 
+              placeholder="Ex: R$ 50,00"
+              value={data.prices.entry}
+              onChange={e => setData(d => ({ ...d, prices: { ...d.prices, entry: e.target.value } }))}
+            />
+          </div>
+
+          {/* Localização */}
           <div className="glass" style={{ padding: 16, borderRadius: 16, border: '1px dashed var(--color-border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--color-accent-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -299,46 +356,20 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
             </div>
           </div>
 
-          {/* Galeria de Fotos */}
+          {/* Mensagem para a equipe WikiFish */}
           <div>
-            <label className="label"><Camera size={14} /> Fotos do Local (Estrutura e Tanques)</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-              <button 
-                className="glass" 
-                style={{ 
-                  aspectRatio: '1', borderRadius: 16, border: '1px dashed var(--color-border)',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  gap: 8, color: 'var(--color-text-muted)'
-                }}
-              >
-                <Plus size={20} />
-                <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>Adicionar</span>
-              </button>
-              {[1, 2, 3].map(i => (
-                <div key={i} className="glass" style={{ aspectRatio: '1', borderRadius: 16, overflow: 'hidden', opacity: 0.3 }}>
-                  <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=200" className="w-full h-full object-cover" alt="" />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Partner Highlight */}
-          <div className="glass" style={{ padding: 16, borderRadius: 20, border: '1px solid var(--color-accent-glow)', background: 'linear-gradient(to right, rgba(0,212,170,0.05), transparent)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 14, background: 'var(--color-accent-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Star className="text-accent" size={20} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700 }}>Parceiro Oficial FishMap?</div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Destaca o local no mapa com selo verificado</div>
-              </div>
-              <input 
-                type="checkbox" 
-                style={{ width: 20, height: 20 }} 
-                checked={data.is_partner}
-                onChange={e => setData(d => ({ ...d, is_partner: e.target.checked }))}
-              />
-            </div>
+            <label className="label"><MessageSquare size={14} /> Mensagem para a Equipe WikiFish</label>
+            <textarea 
+              className="input" 
+              placeholder="Dúvidas, expectativas ou informações adicionais sobre seu pesqueiro..." 
+              value={data.team_message}
+              onChange={e => setData(d => ({ ...d, team_message: e.target.value }))}
+              rows={3}
+              style={{ resize: 'none' }}
+            />
+            <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
+              Nossa equipe entrará em contato para ativar as funções premium do seu perfil.
+            </p>
           </div>
 
         </div>

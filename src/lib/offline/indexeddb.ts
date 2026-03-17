@@ -24,6 +24,7 @@ interface FishMapOfflineDB {
       fuzz_radius_m: number
       created_locally_at: string
       synced: number
+      supabase_id?: string // ID real retornado pelo Supabase após sync
     }
     indexes: { 'by-synced': number }
   }
@@ -114,11 +115,11 @@ export async function getPendingSpots() {
   return database.getAllFromIndex('pending_spots', 'by-synced', 0)
 }
 
-export async function markSpotSynced(id: string) {
+export async function markSpotSynced(id: string, supabaseId: string) {
   const database = await getOfflineDB()
   const spot = await database.get('pending_spots', id)
   if (spot) {
-    await database.put('pending_spots', { ...spot, synced: 1 })
+    await database.put('pending_spots', { ...spot, synced: 1, supabase_id: supabaseId })
   }
 }
 
@@ -173,7 +174,7 @@ export async function syncPendingData(supabaseClient: any, userId: string) {
   // Mapeamento de IDs locais temporários para o novo UUID gerado no Supabase
   const spotIdMap: Record<string, string> = {}
 
-  // Sincronizar spots
+  // Sincronizar spots primeiro
   for (const spot of pendingSpots) {
     try {
       const { data: newSpot, error } = await supabaseClient.from('spots').insert({
@@ -191,10 +192,10 @@ export async function syncPendingData(supabaseClient: any, userId: string) {
 
       if (error) throw error
       if (newSpot) {
-        spotIdMap[spot.id] = newSpot.id // Salva o ID real retornado
+        spotIdMap[spot.id] = newSpot.id
+        await markSpotSynced(spot.id, newSpot.id)
       }
       
-      await markSpotSynced(spot.id)
       synced++
     } catch (err: any) {
       console.error('[Sync] Erro ao sincronizar spot:', spot.id, err.message || err)
@@ -202,19 +203,53 @@ export async function syncPendingData(supabaseClient: any, userId: string) {
     }
   }
 
+  const database = await getOfflineDB()
+
+  // Helper: resolver o spot_id real para uma captura (com fallback null seguro)
+  const resolveSpotId = async (localSpotId: string | null): Promise<string | null> => {
+    if (!localSpotId) return null
+
+    // 1. Foi sincronizado nesta rodada
+    if (spotIdMap[localSpotId]) return spotIdMap[localSpotId]
+
+    // 2. Verificar se está no IndexedDB como spot local
+    const localSpot = await database.get('pending_spots', localSpotId)
+    if (localSpot) {
+      if (localSpot.synced === 1 && localSpot.supabase_id) {
+        return localSpot.supabase_id // Já foi sincronizado em rodada anterior
+      }
+      // Spot local ainda pendente — não podemos usar o ID local como FK
+      console.warn(`[Sync] spot_id local ${localSpotId} ainda não foi sincronizado. Enviando captura sem spot.`)
+      return null
+    }
+
+    // 3. O ID não está no IndexedDB — pode ser um UUID real do Supabase (spot criado online)
+    // Verifica se existe no servidor antes de usar para evitar FK violation
+    try {
+      const { data, error } = await supabaseClient
+        .from('spots')
+        .select('id')
+        .eq('id', localSpotId)
+        .single()
+      if (!error && data) return localSpotId // Confirmado no servidor
+    } catch {
+      // Falhou ao verificar — melhor não usar
+    }
+
+    console.warn(`[Sync] spot_id ${localSpotId} não encontrado no servidor. Enviando captura sem spot.`)
+    return null
+  }
+
   // Sincronizar capturas
   for (const capture of pendingCaptures) {
     try {
-      // Se a captura pertencer a um spot criado offline, substitui pelo ID real no DB
-      const realSpotId = capture.spot_id && spotIdMap[capture.spot_id] 
-                          ? spotIdMap[capture.spot_id] 
-                          : capture.spot_id
+      const realSpotId = await resolveSpotId(capture.spot_id)
 
       const { data: captureData, error: captureError } = await supabaseClient
         .from('captures')
         .insert({
           user_id: userId,
-          spot_id: realSpotId,
+          spot_id: realSpotId, // null se orphaned — FK aceita null (ON DELETE SET NULL)
           species: capture.species,
           weight_kg: capture.weight_kg,
           length_cm: capture.length_cm,
@@ -263,4 +298,17 @@ export async function getPendingCount(): Promise<number> {
     getPendingCaptures(),
   ])
   return spots.length + captures.length
+}
+
+// ─── LIMPEZA DO INDEXEDDB ─────────────────────────────────────
+
+/** Remove todos os dados pendentes do IndexedDB (útil para reset/testes) */
+export async function clearAllPendingData() {
+  const database = await getOfflineDB()
+  await Promise.all([
+    database.clear('pending_spots'),
+    database.clear('pending_captures'),
+    database.clear('spots_cache'),
+  ])
+  console.log('[Offline] IndexedDB limpo com sucesso.')
 }

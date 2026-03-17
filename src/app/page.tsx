@@ -328,8 +328,9 @@ function HomeContent() {
           <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[1000] glass p-4 rounded-2xl border-accent/30 animate-bounce">
              <div className="flex items-center gap-3">
                 <MapPin className="text-accent" />
+                <MapPin className="text-accent" />
                 <p className="text-sm font-black text-white uppercase tracking-widest">
-                   Clique no mapa para posicionar o {creationMode === 'spot' ? 'Ponto' : 'Pesqueiro'}
+                   Clique no mapa para posicionar o Ponto de Pesca
                 </p>
              </div>
           </div>
@@ -348,22 +349,7 @@ function HomeContent() {
             zIndex: 900,
           }}
         >
-          {/* Top-Left: Cadastrar Pesqueiro */}
-          <button
-            id="fab-new-resort"
-            className={`btn-secondary ${creationMode === 'resort' ? 'ring-2 ring-accent' : ''}`}
-            onClick={() => setCreationMode(creationMode === 'resort' ? null : 'resort')}
-            style={{
-              width: 56, height: 56, borderRadius: 16, padding: 0,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-              background: 'linear-gradient(135deg, var(--color-bg-card), #1e293b)'
-            }}
-            title="Cadastrar Pesqueiro"
-          >
-            <Warehouse size={22} className="text-accent" />
-          </button>
-
-          {/* Top-Right: Nova Captura */}
+          {/* Top-Right: Nova Captura (Agora ocupa a linha superior inteira ou fica sozinho) */}
           <button
             id="fab-new-capture"
             className="btn-primary"
@@ -371,6 +357,7 @@ function HomeContent() {
             style={{
               width: 56, height: 56, borderRadius: 16, padding: 0,
               boxShadow: '0 8px 32px rgba(0, 212, 170, 0.4)',
+              gridColumn: '2', // Mantém na segunda coluna
             }}
             title="Nova Captura"
           >

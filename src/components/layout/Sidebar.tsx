@@ -6,9 +6,10 @@ import { useState, useEffect } from 'react'
 import {
   Map, Fish, BookOpen, Trophy, User, Settings,
   ChevronRight, Wifi, WifiOff, Plus, Bell, LogOut,
-  LogIn, Award, Crown
+  LogIn, Award, Crown, Store, Building
 } from 'lucide-react'
 import { getSupabaseClient } from '@/lib/supabase/client'
+import B2BLanding from '@/components/partners/B2BLanding'
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton'
 import SignOutButton from '@/components/auth/SignOutButton'
 import { User as SupabaseUser } from '@supabase/supabase-js'
@@ -38,6 +39,7 @@ export default function Sidebar({
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [isResortOwner, setIsResortOwner] = useState(false)
+  const [showLanding, setShowLanding] = useState(false)
 
   useEffect(() => {
     const supabase = getSupabaseClient()
@@ -72,8 +74,8 @@ export default function Sidebar({
     const checkResortOwner = async (uid: string) => {
       const { data } = await supabase
         .from('fishing_resorts')
-        .select('id, spots!inner(user_id)')
-        .eq('spots.user_id', uid)
+        .select('id')
+        .eq('owner_id', uid)
         .limit(1)
       setIsResortOwner(!!data && data.length > 0)
     }
@@ -237,20 +239,7 @@ export default function Sidebar({
               </Link>
             )
           })}
-          {isResortOwner && (
-            <Link
-              href="/resort-admin"
-              className={`sidebar-item ${pathname === '/resort-admin' ? 'active' : ''}`}
-              style={{ background: 'rgba(0, 212, 170, 0.05)', border: '1px solid rgba(0, 212, 170, 0.1)' }}
-            >
-              <Settings size={20} className="text-accent" />
-              {expanded && (
-                <span className="fade-in font-black text-accent" style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                  Admin Pesqueiro
-                </span>
-              )}
-            </Link>
-          )}
+          {/* Navigation Items (Regular) - Removed Admin Link from here to consolidate at bottom */}
         </nav>
 
         {/* Separador */}
@@ -296,6 +285,43 @@ export default function Sidebar({
             )}
           </div>
 
+          {/* Botão de Anunciar Pesqueiro (Somente se não tiver um e estiver logado) */}
+          {user && (
+            profile?.subscription_tier === 'partner' || profile?.subscription_tier === 'admin' ? (
+              <Link 
+                href="/resort-admin" 
+                className={`sidebar-item group ${pathname === '/resort-admin' ? 'active' : ''}`}
+                style={{ 
+                  background: 'linear-gradient(to right, rgba(0, 212, 170, 0.05), transparent)',
+                  border: '1px solid rgba(0, 212, 170, 0.1)',
+                  marginBottom: 8
+                }}
+              >
+                 <Settings size={18} className="text-accent" />
+                 {expanded && (
+                   <span className="fade-in text-xs font-black uppercase text-accent">Meu Painel Admin</span>
+                 )}
+              </Link>
+            ) : (
+              <button 
+                onClick={() => setShowLanding(true)}
+                className="sidebar-item group"
+                style={{ 
+                  background: 'rgba(0, 212, 170, 0.03)',
+                  border: '1px solid rgba(0, 212, 170, 0.4)',
+                  boxShadow: '0 0 10px rgba(0, 212, 170, 0.1)',
+                  marginBottom: 8,
+                  textAlign: 'left'
+                }}
+              >
+                 <Store size={18} className="text-accent group-hover:scale-110 transition-transform" />
+                 {expanded && (
+                   <span className="fade-in text-xs font-black uppercase text-accent tracking-tighter">Anunciar Pesqueiro</span>
+                 )}
+              </button>
+            )
+          )}
+
           {/* Settings */}
           <Link href="/settings" id="nav-settings" className="sidebar-item">
             <Settings size={18} style={{ flexShrink: 0 }} />
@@ -314,6 +340,15 @@ export default function Sidebar({
           )}
         </div>
       </div>
+      {showLanding && (
+        <B2BLanding 
+           onClose={() => setShowLanding(false)} 
+           onStart={() => {
+              setShowLanding(false)
+              window.location.href = '/profile?tab=business&start=true'
+           }}
+        />
+      )}
     </aside>
   )
 }
