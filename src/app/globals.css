@@ -31,7 +31,7 @@
 
   @media (max-width: 768px) {
     :root {
-      --sidebar-width: 0px; /* Esconde no mobile por padrão ou vira floater */
+      --sidebar-width: 60px; /* Restaurado para visível no mobile */
       --sidebar-expanded: 85vw;
       --drawer-width: 100vw;
     }
