@@ -148,7 +148,7 @@ export default function ProfilePage() {
         city: editForm.city,
         state: editForm.state,
         updated_at: new Date().toISOString()
-      })
+      } as never)
       .eq('id', user.id)
 
     if (error) {

@@ -416,7 +416,7 @@ export default function SpotDetailsView({
                           await supabase.from('interactions').delete().eq('capture_id', cap.id).eq('user_id', user.id).eq('type', 'like');
                         } else {
                           // Like
-                          await supabase.from('interactions').insert({ capture_id: cap.id, user_id: user.id, type: 'like' });
+                          await supabase.from('interactions').insert({ capture_id: cap.id, user_id: user.id, type: 'like' } as never);
                         }
                         fetchSpotData(); // Recarregar para atualizar contagem
                       }}

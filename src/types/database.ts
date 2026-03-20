@@ -323,6 +323,7 @@ export interface Database {
       spots_map_view: {
         Row: {
           id: string
+          user_id: string
           title: string
           description: string | null
           photo_url: string | null
@@ -342,10 +343,26 @@ export interface Database {
           resort_infrastructure: Json | null
           resort_prices: Json | null
           open_tournaments_count: number
+          latest_lure_type: string | null
+          latest_lure_model: string | null
+          latest_lure_color: string | null
+          is_verified: boolean
+          fuzz_radius_m: number
+          verification_count: number
+          community_unlock_captures: number
+          created_at: string
+          owner_name: string | null
+          owner_avatar: string | null
+          resort_id: string | null
+          resort_main_species: string | null
+          instagram: string | null
+          website: string | null
         }
       }
     }
     Functions: { [_: string]: any }
+    Enums: { [_: string]: any }
+    CompositeTypes: { [_: string]: any }
   }
 }
 
