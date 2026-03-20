@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Filter, X, ChevronDown, Search } from 'lucide-react'
+import { Filter, X, ChevronDown, Search, Menu } from 'lucide-react'
 
 const SPECIES_COMMON = [
   'Tucunaré', 'Dourado', 'Traíra', 'Piranha', 'Pintado', 'Pirarucu',
@@ -78,17 +78,9 @@ export default function MapFiltersBar({ filters, onChange, spotCount, user, them
   return (
     <div
       id="map-filters"
-      className="glass"
+      className="glass absolute z-[900] rounded-[14px] max-w-[500px] left-1/2 -translate-x-1/2 w-[calc(100%-32px)] md:w-[calc(100%-140px)] md:min-w-[320px]"
       style={{
-        position: 'absolute',
         top: 'calc(16px + env(safe-area-inset-top, 0px))',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 900,
-        borderRadius: 14,
-        minWidth: 320,
-        maxWidth: 500,
-        width: 'calc(100% - 140px)',
         // Se for tema claro, sobrepor o glass padrão com branco
         background: theme === 'light' ? 'rgba(255, 255, 255, 0.95)' : undefined,
         borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : undefined,
@@ -98,6 +90,21 @@ export default function MapFiltersBar({ filters, onChange, spotCount, user, them
     >
       {/* Barra principal */}
       <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        
+        {/* Mobile Sidebar Toggle Button injected into MapFiltersBar */}
+        <button
+          type="button"
+          className="md:hidden flex items-center justify-center rounded-[10px] bg-[#0a0f1a] text-white border border-[var(--color-border-strong)] hover:bg-[#121e30] transition-colors"
+          style={{ minWidth: 42, width: 42, height: 42 }}
+          onClick={(e) => { 
+            e.preventDefault(); 
+            e.stopPropagation(); 
+            window.dispatchEvent(new CustomEvent('toggleMobileMenu')); 
+          }}
+        >
+          <Menu size={20} />
+        </button>
+
         {/* Busca por espécie */}
         <div style={{ position: 'relative', flex: 1 }}>
           <Search size={14} color={theme === 'light' ? '#6b7280' : "var(--color-text-muted)"} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />

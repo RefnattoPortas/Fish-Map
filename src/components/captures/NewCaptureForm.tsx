@@ -100,6 +100,11 @@ export default function NewCaptureForm({
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [loading, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
+  
+  // Foto states
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+
   const [data, setData] = useState<FormData>({
     species: '',
     weight_kg: '',
@@ -125,6 +130,18 @@ export default function NewCaptureForm({
   const set = (key: keyof FormData, val: any) =>
     setData(prev => ({ ...prev, [key]: val }))
 
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setPhotoFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleSave = async () => {
     if (!data.species) return
     setSaving(true)
@@ -133,6 +150,27 @@ export default function NewCaptureForm({
         ? crypto.randomUUID() 
         : `offline-cap-${Date.now()}-${Math.floor(Math.random()*1000)}`
 
+    // Subir a foto pro Bucket se online (se falhar ou offline salva o Base64 na URL par n perder)
+    let finalPhotoUrl = photoPreview
+
+    if (photoFile && isOnline) {
+      try {
+        const supabase = getSupabaseClient() as any
+        const fileExt = photoFile.name.split('.').pop()
+        const fileName = `${userId}_${Date.now()}.${fileExt}`
+        const { data: uploadData, error: uploadError } = await supabase.storage.from('captures').upload(fileName, photoFile)
+        
+        if (!uploadError && uploadData) {
+          const { data: { publicUrl } } = supabase.storage.from('captures').getPublicUrl(fileName)
+          finalPhotoUrl = publicUrl // Substitui Base64 pesada pelo link oficial leve
+        } else {
+          console.warn('Erro ao subir no bucket Storage (falta migrations?). Fallback Base64.', uploadError)
+        }
+      } catch (err) {
+        console.warn('Erro Storage', err)
+      }
+    }
+
     const capturePayload = {
       id: captureId,
       user_id: userId,
@@ -140,7 +178,7 @@ export default function NewCaptureForm({
       species: data.species,
       weight_kg: data.weight_kg ? parseFloat(data.weight_kg) : null,
       length_cm: data.length_cm ? parseFloat(data.length_cm) : null,
-      photo_url: null,
+      photo_url: finalPhotoUrl,
       captured_at: new Date().toISOString(),
       moon_phase: data.moon_phase || null,
       temperature_c: data.temperature_c ? parseFloat(data.temperature_c) : null,
@@ -186,6 +224,7 @@ export default function NewCaptureForm({
             species: data.species,
             weight_kg: data.weight_kg ? parseFloat(data.weight_kg) : null,
             length_cm: data.length_cm ? parseFloat(data.length_cm) : null,
+            photo_url: finalPhotoUrl,
             is_trophy: data.is_trophy,
             was_released: data.was_released,
             moon_phase: data.moon_phase || null,
@@ -324,6 +363,42 @@ export default function NewCaptureForm({
           {/* ── STEP 1: Dados do Peixe ──────────────────────── */}
           {step === 1 && (
             <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Foto via Celular / Câmera */}
+              <div>
+                <label className="label"><Camera size={12} /> Foto da Captura</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label 
+                    className="btn-secondary" 
+                    style={{ flex: 1, padding: '14px', cursor: 'pointer', borderStyle: 'dashed', background: photoPreview ? 'var(--color-bg-elevated)' : 'transparent', position: 'relative', overflow: 'hidden' }}
+                  >
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      capture="environment" 
+                      onChange={handlePhotoSelect} 
+                      style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', left: 0, top: 0, cursor: 'pointer' }}
+                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                      {photoPreview ? (
+                        <>
+                          <img src={photoPreview} alt="Preview" style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border-strong)' }} />
+                          <span style={{ fontSize: 12, color: 'var(--color-accent-primary)', fontWeight: 600 }}>Trocar foto</span>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ padding: 10, background: 'var(--color-bg-secondary)', borderRadius: '50%' }}>
+                            <Camera size={24} color="var(--color-text-secondary)" />
+                          </div>
+                          <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+                            Toque para tirar foto
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               {/* Espécie */}
               <div>
                 <label className="label"><Fish size={12} /> Espécie *</label>
@@ -333,7 +408,7 @@ export default function NewCaptureForm({
                   placeholder="Ex: Tucunaré, Dourado, Traíra..."
                   value={data.species}
                   onChange={e => set('species', e.target.value)}
-                  autoFocus
+                  autoFocus={!photoPreview}
                 />
               </div>
 

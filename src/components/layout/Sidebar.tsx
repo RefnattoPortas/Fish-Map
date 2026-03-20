@@ -95,15 +95,31 @@ export default function Sidebar({
   const xpForNextLevel = userLevel * 500
   const xpProgress = Math.min((userXP % 500) / 500 * 100, 100)
 
+  const showDefaultMobileButton = pathname !== '/'
+
+  useEffect(() => {
+    const handleToggle = () => setIsOpenMobile(prev => !prev)
+    window.addEventListener('toggleMobileMenu', handleToggle as EventListener)
+    return () => window.removeEventListener('toggleMobileMenu', handleToggle as EventListener)
+  }, [])
+
+  useEffect(() => {
+    if (isOpenMobile) {
+      setExpanded(true)
+    }
+  }, [isOpenMobile])
+
   return (
     <>
-      {/* Mobile Toggle Button */}
-      <button 
-        onClick={() => setIsOpenMobile(!isOpenMobile)}
-        className="fixed top-4 left-4 z-[9999] md:hidden flex h-12 w-12 items-center justify-center rounded-xl bg-[#0f1829] text-white shadow-2xl border border-white/10 hover:bg-white/5 transition-colors"
-      >
-        {isOpenMobile ? <X size={20} /> : <Menu size={20} />}
-      </button>
+      {/* Mobile Toggle Button (Hidden on Map page to use custom embedded button instead) */}
+      {showDefaultMobileButton && (
+        <button 
+          onClick={() => setIsOpenMobile(!isOpenMobile)}
+          className="fixed top-4 left-4 z-[9999] md:hidden flex h-12 w-12 items-center justify-center rounded-xl bg-[#0f1829] text-white shadow-2xl border border-white/10 hover:bg-white/5 transition-colors"
+        >
+          {isOpenMobile ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      )}
 
       {/* Backdrop for Mobile */}
       {isOpenMobile && (
