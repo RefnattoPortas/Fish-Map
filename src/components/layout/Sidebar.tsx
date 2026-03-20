@@ -100,7 +100,7 @@ export default function Sidebar({
       {/* Mobile Toggle Button */}
       <button 
         onClick={() => setIsOpenMobile(!isOpenMobile)}
-        className="fixed top-4 left-4 z-[100] md:hidden flex h-12 w-12 items-center justify-center rounded-xl bg-[#0f1829] text-white shadow-2xl border border-white/10 hover:bg-white/5 transition-colors"
+        className="fixed top-4 left-4 z-[9999] md:hidden flex h-12 w-12 items-center justify-center rounded-xl bg-[#0f1829] text-white shadow-2xl border border-white/10 hover:bg-white/5 transition-colors"
       >
         {isOpenMobile ? <X size={20} /> : <Menu size={20} />}
       </button>
@@ -108,14 +108,14 @@ export default function Sidebar({
       {/* Backdrop for Mobile */}
       {isOpenMobile && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-all duration-300"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998] md:hidden transition-all duration-300"
           onClick={() => setIsOpenMobile(false)}
         />
       )}
 
       <aside
         id="sidebar"
-        className={`glass flex flex-col border-r border-white/5 transition-transform duration-300 z-40
+        className={`glass flex flex-col border-r border-white/5 transition-transform duration-300 z-[9999]
           ${isOpenMobile ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} 
           fixed inset-y-0 left-0 md:relative h-full`}
         style={{
