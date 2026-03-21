@@ -1,5 +1,5 @@
-# Exclude Supabase-specific files from Vercel deployment
-supabase/
+# Only exclude the root Supabase-specific folders from Vercel deployment
+/supabase/
 .env*
 !.env.example
 .git
