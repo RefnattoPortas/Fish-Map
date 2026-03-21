@@ -76,8 +76,14 @@ export default function SpotDetailsView({
   useEffect(() => {
     if (spot && isOpen) {
       fetchSpotData()
+      // Se for um pesqueiro, a aba Infra é a prioridade
+      if (spot.is_resort) {
+        setActiveTab('infra')
+      } else {
+        setActiveTab('insights')
+      }
     }
-  }, [spot, isOpen])
+  }, [spot?.id, isOpen])
 
   const fetchSpotData = async () => {
     if (!spot) return
@@ -256,10 +262,10 @@ export default function SpotDetailsView({
         <div className="px-6 mt-6">
           <div className="flex gap-4 p-1 rounded-xl bg-white/5 border border-white/10">
             {[
+              ...(spot.is_resort ? [{ id: 'infra', label: 'Infra', icon: Warehouse }] : []),
               { id: 'insights', label: 'Insights', icon: BarChart3 },
               { id: 'feed', label: 'Feed', icon: Camera },
-              { id: 'ranking', label: 'Ranking', icon: Trophy },
-              ...(spot.is_resort ? [{ id: 'infra', label: 'Infra', icon: Warehouse }] : [])
+              { id: 'ranking', label: 'Ranking', icon: Trophy }
             ].map(tab => (
               <button
                 key={tab.id}

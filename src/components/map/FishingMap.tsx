@@ -36,6 +36,7 @@ interface FishingMapProps {
   zoom?: number
   onMapClick?: (lat: number, lng: number) => void
   theme?: 'dark' | 'light'
+  onBoundsChange?: (bounds: { north: number, south: number, east: number, west: number }) => void
 }
 
 const DEFAULT_CENTER: [number, number] = [-15.7801, -47.9292]
@@ -52,6 +53,7 @@ export default function FishingMap({
   zoom = DEFAULT_ZOOM,
   onMapClick,
   theme = 'light',
+  onBoundsChange,
 }: FishingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletMapRef = useRef<LeafletMap | null>(null)
@@ -138,6 +140,23 @@ export default function FishingMap({
         mapInstance.on('click', (e: any) => {
           onMapClickRef.current?.(e.latlng.lat, e.latlng.lng)
         })
+
+        // Emitir bounds quando o mapa é movido ou deu zoom
+        const emitBounds = () => {
+          const b = mapInstance?.getBounds()
+          if (b && onBoundsChange) {
+            onBoundsChange({
+              north: b.getNorth(),
+              south: b.getSouth(),
+              east: b.getEast(),
+              west: b.getWest()
+            })
+          }
+        }
+        mapInstance.on('moveend', emitBounds)
+        mapInstance.on('zoomend', emitBounds)
+        // Emitir na inicialização também
+        setTimeout(emitBounds, 500)
 
         leafletMapRef.current = mapInstance
         setIsLoaded(true)
@@ -234,17 +253,35 @@ export default function FishingMap({
       markersRef.current.forEach(m => m.remove())
       markersRef.current = []
 
-      // Filtrar spots
-      let filteredSpots = spots
+      // Filtrar e Ordenar spots (Pesqueiros ficam em cima/por último no render)
+      let filteredSpots = [...spots]
       if (filterLureType) {
         filteredSpots = spots.filter(s => s.latest_lure_type === filterLureType)
       }
+      
+      // Ordena para que Pesqueiros (is_resort) e Parceiros (is_resort_partner) fiquem no topo
+      filteredSpots.sort((a, b) => {
+        const scoreA = ((a as any).is_resort ? 1 : 0) + ((a as any).is_resort_partner ? 2 : 0)
+        const scoreB = ((b as any).is_resort ? 1 : 0) + ((b as any).is_resort_partner ? 2 : 0)
+        return scoreA - scoreB
+      })
 
       // Renderizar cada spot
+      const usedCoords = new Set<string>()
+
       for (const spot of filteredSpots) {
-        const lat = spot.display_lat ?? spot.exact_lat
-        const lng = spot.display_lng ?? spot.exact_lng
+        let lat = spot.display_lat ?? spot.exact_lat
+        let lng = spot.display_lng ?? spot.exact_lng
         if (lat === null || lat === undefined || lng === null || lng === undefined) continue
+
+        // Gerenciar sobreposição (jitter)
+        const coordKey = `${lat.toFixed(6)},${lng.toFixed(6)}`
+        if (usedCoords.has(coordKey)) {
+          // Deslocamento de ~10m para não ficarem um em cima do outro
+          lat += (Math.random() - 0.5) * 0.0001
+          lng += (Math.random() - 0.5) * 0.0001
+        }
+        usedCoords.add(coordKey)
 
         const isSelected = spot.id === selectedSpotId
         const privacyColor = PRIVACY_COLORS[spot.privacy_level as keyof typeof PRIVACY_COLORS] || '#00d4aa'

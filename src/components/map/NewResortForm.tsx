@@ -64,6 +64,12 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
     fetchTier()
   }, [userId])
 
+  useEffect(() => {
+    if (initialLat && initialLng) {
+      setData(d => ({ ...d, lat: initialLat, lng: initialLng }))
+    }
+  }, [initialLat, initialLng])
+
   const toggleInfra = (key: keyof typeof data.infra) => {
     setData(d => ({
       ...d,
@@ -325,17 +331,38 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
           </div>
 
           {/* Localização */}
-          <div className="glass" style={{ padding: 16, borderRadius: 16, border: '1px dashed var(--color-border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="glass" style={{ padding: 16, borderRadius: 16, border: '1px dashed var(--color-accent-glow)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--color-accent-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <MapPin className="text-accent" size={20} />
+                <MapPin className="text-secondary" size={20} />
               </div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>Localização do Pesqueiro</div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                  Lat: {data.lat.toFixed(4)}, Lng: {data.lng.toFixed(4)}
+                <div style={{ fontSize: 10, color: 'var(--color-accent-primary)', fontWeight: 700, textTransform: 'uppercase' }}>
+                  Clique no mapa para alterar a posição
                 </div>
               </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+               <div>
+                 <label style={{ fontSize: 10, fontWeight: 800, color: 'gray', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Latitude</label>
+                 <input 
+                   type="number" step="0.000001"
+                   className="input" style={{ fontSize: 12, padding: '8px 12px' }}
+                   value={data.lat}
+                   onChange={e => setData(d => ({ ...d, lat: parseFloat(e.target.value) }))}
+                 />
+               </div>
+               <div>
+                 <label style={{ fontSize: 10, fontWeight: 800, color: 'gray', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Longitude</label>
+                 <input 
+                   type="number" step="0.000001"
+                   className="input" style={{ fontSize: 12, padding: '8px 12px' }}
+                   value={data.lng}
+                   onChange={e => setData(d => ({ ...d, lng: parseFloat(e.target.value) }))}
+                 />
+               </div>
             </div>
           </div>
 

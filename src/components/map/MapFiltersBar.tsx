@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Filter, X, ChevronDown, Search, Menu } from 'lucide-react'
+import { Filter, X, ChevronDown, Search, Menu, Flame, BellOff, Bell, ChevronRight } from 'lucide-react'
 import { ALL_SPECIES as SPECIES_COMMON } from '@/lib/data/species'
 
 
@@ -35,22 +35,49 @@ export interface MapFilters {
   hidePublic: boolean
 }
 
+export interface ResortHighlight {
+  id: string
+  title: string
+  highlight: string
+}
+
 interface MapFiltersBarProps {
   filters: MapFilters
   onChange: (filters: MapFilters) => void
   spotCount: number
   user: any
   theme?: 'dark' | 'light'
+  highlights?: ResortHighlight[]
+  onHighlightClick?: (id: string) => void
 }
 
-export default function MapFiltersBar({ filters, onChange, spotCount, user, theme = 'light' }: MapFiltersBarProps) {
+export default function MapFiltersBar({ filters, onChange, spotCount, user, theme = 'light', highlights = [], onHighlightClick }: MapFiltersBarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [speciesSearch, setSpeciesSearch] = useState(filters.species)
   const [isMounted, setIsMounted] = useState(false)
+  const [muted, setMuted] = useState(false)
+  const [activeHighlightIdx, setActiveHighlightIdx] = useState(0)
 
   useEffect(() => {
     setIsMounted(true)
+    const saved = localStorage.getItem('wikifish_mute_highlights')
+    if (saved === 'true') setMuted(true)
   }, [])
+
+  // Rotação automática das notificações a cada 5s
+  useEffect(() => {
+    if (highlights.length <= 1) return
+    const interval = setInterval(() => {
+      setActiveHighlightIdx(prev => (prev + 1) % highlights.length)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [highlights.length])
+
+  const toggleMute = () => {
+    const next = !muted
+    setMuted(next)
+    localStorage.setItem('wikifish_mute_highlights', String(next))
+  }
 
 
   const set = (key: keyof MapFilters, val: any) =>
@@ -303,11 +330,75 @@ export default function MapFiltersBar({ filters, onChange, spotCount, user, them
         </div>
       )}
 
-      {/* Contagem de resultados */}
+      {/* Contagem de resultados + Notificações de Destaque */}
       <div style={{ padding: '6px 14px 10px', borderTop: isExpanded ? `1px solid ${theme === 'light' ? '#e5e7eb' : 'var(--color-border)'}` : 'none' }}>
-        <span style={{ fontSize: 11, color: theme === 'light' ? '#6b7280' : 'var(--color-text-muted)' }}>
-          {spotCount} ponto{spotCount !== 1 ? 's' : ''} {hasActiveFilters ? 'encontrado(s)' : 'no mapa'}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 11, color: theme === 'light' ? '#6b7280' : 'var(--color-text-muted)' }}>
+            {spotCount} ponto{spotCount !== 1 ? 's' : ''} {hasActiveFilters ? 'encontrado(s)' : 'no mapa'}
+          </span>
+          {highlights.length > 0 && (
+            <button 
+              onClick={toggleMute}
+              title={muted ? 'Ativar notificações' : 'Silenciar notificações'}
+              style={{ 
+                background: 'none', border: 'none', cursor: 'pointer', padding: 2,
+                color: muted ? (theme === 'light' ? '#9ca3af' : 'var(--color-text-muted)') : '#a855f7',
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}
+            >
+              {muted ? <BellOff size={13} /> : <Bell size={13} />}
+              <span style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {muted ? 'Silenciado' : `${highlights.length} aviso${highlights.length > 1 ? 's' : ''}`}
+              </span>
+            </button>
+          )}
+        </div>
+
+        {/* Banner de Destaque do Pesqueiro */}
+        {!muted && highlights.length > 0 && (() => {
+          const h = highlights[activeHighlightIdx % highlights.length]
+          if (!h) return null
+          return (
+            <button 
+              key={h.id}
+              onClick={() => onHighlightClick?.(h.id)}
+              style={{
+                marginTop: 8,
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '8px 12px',
+                borderRadius: 12,
+                border: '1px solid',
+                borderColor: theme === 'light' ? '#a855f733' : '#a855f744',
+                background: theme === 'light' ? '#a855f70a' : 'rgba(168, 85, 247, 0.08)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.3s ease',
+              }}
+            >
+              <Flame size={16} style={{ color: '#a855f7', flexShrink: 0 }} />
+              <div style={{ flex: 1, overflow: 'hidden' }}>
+                <div style={{ fontSize: 9, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#a855f7', lineHeight: 1, marginBottom: 3 }}>Destaque na Região</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: theme === 'light' ? '#1f2937' : '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {h.highlight} <span style={{ fontWeight: 500, color: theme === 'light' ? '#6b7280' : '#9ca3af' }}>— {h.title}</span>
+                </div>
+              </div>
+              {highlights.length > 1 && (
+                <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexShrink: 0 }}>
+                  {highlights.map((_, i) => (
+                    <div key={i} style={{
+                      width: 5, height: 5, borderRadius: '50%',
+                      background: i === activeHighlightIdx % highlights.length ? '#a855f7' : (theme === 'light' ? '#d1d5db' : '#374151') 
+                    }} />
+                  ))}
+                </div>
+              )}
+              <ChevronRight size={14} style={{ color: '#a855f7', flexShrink: 0 }} />
+            </button>
+          )
+        })()}
       </div>
     </div>
   )

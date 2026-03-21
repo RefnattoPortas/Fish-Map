@@ -8,6 +8,7 @@ import SpotDetailsView from '@/components/map/SpotDetailsView'
 import MapFiltersBar, { MapFilters } from '@/components/map/MapFiltersBar'
 import type { SpotMapView } from '@/types/database'
 import { Plus, RefreshCw, MapPin, Warehouse, Flame, Download, Info } from 'lucide-react'
+import type { ResortHighlight } from '@/components/map/MapFiltersBar'
 import PaywallModal from '@/components/common/PaywallModal'
 
 // Importação dinâmica do mapa (evita erro de SSR com Leaflet)
@@ -83,7 +84,8 @@ function HomeContent() {
   const [user, setUser] = useState<any>(null)
   const [showPaywall, setShowPaywall] = useState(false)
   const [paywallFeature, setPaywallFeature] = useState('')
-  const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('light') // Padrão light como falado
+  const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('light')
+  const [mapBounds, setMapBounds] = useState<{ north: number, south: number, east: number, west: number } | null>(null)
 
   // Ler tema local do mapa
   useEffect(() => {
@@ -279,9 +281,25 @@ function HomeContent() {
     setShowCaptureForm(true)
   }, [])
 
-  const activeHighlight = useMemo(() => {
-    return filteredSpots.find(s => s.is_resort && s.resort_active_highlight)
-  }, [filteredSpots])
+  // Highlights de pesqueiros filtrados pela viewport atual do mapa
+  const viewportHighlights = useMemo<ResortHighlight[]>(() => {
+    if (!mapBounds) return []
+    return filteredSpots
+      .filter(s => {
+        if (!s.is_resort || !s.resort_active_highlight) return false
+        const lat = s.display_lat ?? s.exact_lat
+        const lng = s.display_lng ?? s.exact_lng
+        if (lat == null || lng == null) return false
+        // Só mostra se estiver dentro da viewport visível
+        return lat >= mapBounds.south && lat <= mapBounds.north && lng >= mapBounds.west && lng <= mapBounds.east
+      })
+      .map(s => ({ id: s.id, title: s.title, highlight: s.resort_active_highlight! }))
+  }, [filteredSpots, mapBounds])
+
+  const handleHighlightClick = useCallback((id: string) => {
+    const spot = filteredSpots.find(s => s.id === id)
+    if (spot) handleSpotSelect(spot)
+  }, [filteredSpots, handleSpotSelect])
 
   const handleVerify = useCallback((spotId: string) => {
     console.log('Verificar spot:', spotId)
@@ -319,19 +337,9 @@ function HomeContent() {
           spotCount={filteredSpots.length}
           user={user}
           theme={mapTheme}
+          highlights={viewportHighlights}
+          onHighlightClick={handleHighlightClick}
         />
-
-        {activeHighlight && (
-           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] glass px-6 py-3 rounded-full border border-accent/40 shadow-[0_0_20px_rgba(0,212,170,0.3)] animate-pulse flex items-center gap-3 cursor-pointer"
-                onClick={() => handleSpotSelect(activeHighlight)}
-           >
-              <Flame size={18} className="text-accent animate-bounce" />
-              <div className="flex flex-col">
-                 <span className="text-[10px] font-black uppercase text-accent tracking-widest leading-none mb-1">Destaque do Dia</span>
-                 <span className="text-sm font-bold text-white max-w-xs truncate">{activeHighlight.resort_active_highlight} — <span className="text-gray-400 font-medium">{activeHighlight.title}</span></span>
-              </div>
-           </div>
-        )}
 
               <FishingMap
                 spots={filteredSpots}
@@ -340,6 +348,7 @@ function HomeContent() {
                 selectedSpotId={activeSpotId}
                 filterLureType={filters.lureType}
                 theme={mapTheme}
+                onBoundsChange={setMapBounds}
               />
 
         {creationMode && (

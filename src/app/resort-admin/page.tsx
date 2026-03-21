@@ -159,15 +159,23 @@ export default function ResortAdminPage() {
   const handleUpdateResort = async (updates: any) => {
     if (!selectedResort) return
     setSaving(true)
+    
+    // Removemos campos que não pertencem à tabela fishing_resorts (como o join 'spots')
+    // para não dar erro de coluna inexistente no Supabase
+    const { id, spots, ...cleanUpdates } = updates
+    
     const { error } = await supabase
       .from('fishing_resorts')
-      .update(updates)
-      .eq('id', selectedResort.id)
+      .update(cleanUpdates)
+      .eq('id', id)
 
     if (error) {
+       console.error('Erro ao atualizar resort:', error)
        alert('Erro ao salvar: ' + error.message)
     } else {
-       setSelectedResort({ ...selectedResort, ...updates })
+       setSelectedResort({ ...selectedResort, ...cleanUpdates })
+       // Atualiza na lista de resorts também
+       setResorts(resorts.map(r => r.id === id ? { ...r, ...cleanUpdates } : r))
     }
     setSaving(false)
   }
