@@ -259,11 +259,12 @@ export default function MapFiltersBar({ filters, onChange, spotCount, user, them
             {[
               { key: 'showOnlyVerified', label: '✓ Só verificados' },
               { key: 'showOnlyPublic',   label: '👁️ Só públicos' },
-              { key: 'showOnlyResorts',  label: '🏡 Pesqueiros' },
+              { key: 'showOnlyResorts',  label: '🏡 Pesqueiros', activeColor: '#a855f7' },
               { key: 'hidePublic',       label: '🔒 Ocultar Públicos', isPro: true },
             ].map(opt => {
               const isActive = (filters as any)[opt.key]
               const isProUser = (user as any)?.profile?.subscription_tier === 'pro' || (user as any)?.profile?.subscription_tier === 'partner'
+              const color = (opt as any).activeColor || (theme === 'light' ? '#00b38f' : 'var(--color-accent-primary)')
               
               return (
                 <button
@@ -276,21 +277,21 @@ export default function MapFiltersBar({ filters, onChange, spotCount, user, them
                     borderRadius: 8,
                     border: '1px solid',
                     borderColor: isActive 
-                        ? '#00d4aa88' 
+                        ? color 
                         : (theme === 'light' ? 'rgba(0,0,0,0.06)' : 'var(--color-border)'),
                     background: isActive 
-                        ? (theme === 'light' ? '#00d4aa22' : 'var(--color-accent-glow)') 
+                        ? (theme === 'light' ? `${color}15` : 'var(--color-accent-glow)') 
                         : (theme === 'light' ? 'rgba(0,0,0,0.04)' : 'transparent'),
                     color: isActive 
-                        ? '#00b38f' 
+                        ? color
                         : (theme === 'light' ? '#6b7280' : 'var(--color-text-secondary)'),
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: opt.isPro && !isProUser ? 'not-allowed' : 'pointer',
                     opacity: opt.isPro && !isProUser ? 0.4 : 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6
                   }}
                 >
                   {opt.label}

@@ -267,8 +267,8 @@ export default function FishingMap({
         const isResort = (spot as any).is_resort
         const isPartner = (spot as any).is_resort_partner
         const pinEmoji = isResort ? '🏡' : '🎣'
-        const baseColor = isPartner ? '#fbbf24' : (isSelected ? privacyColor : 'var(--color-bg-card, #121e30)')
-        const borderColor = isPartner ? '#fbbf24' : (isResort ? 'var(--color-accent-primary)' : privacyColor)
+        const baseColor = isPartner ? '#a855f7' : (isSelected ? privacyColor : 'var(--color-bg-card, #121e30)')
+        const borderColor = isPartner ? '#a855f7' : (isResort ? 'var(--color-accent-primary)' : privacyColor)
         
         const icon = L.divIcon({
           className: '',
@@ -283,7 +283,7 @@ export default function FishingMap({
                 <div style="
                   position: absolute;
                   width: 50px; height: 50px;
-                  background: rgba(251, 191, 36, 0.15);
+                  background: rgba(168, 85, 247, 0.2);
                   border-radius: 50%;
                   animation: partner-pulse 2s infinite;
                   z-index: -1;
@@ -302,8 +302,8 @@ export default function FishingMap({
                 border: 2.5px solid ${borderColor};
                 border-radius: 50% 50% 50% 0;
                 transform: rotate(-45deg);
-                box-shadow: 0 4px 20px ${isPartner ? '#fbbf2455' : privacyColor + '55'}, 
-                            0 0 0 ${isSelected ? '6px' : '3px'} ${isPartner ? '#fbbf2422' : privacyColor + '22'};
+                box-shadow: 0 4px 20px ${isPartner ? '#a855f755' : privacyColor + '55'}, 
+                            0 0 0 ${isSelected ? '6px' : '3px'} ${isPartner ? '#a855f722' : privacyColor + '22'};
                 transition: all 0.2s ease;
               ">
               </div>
@@ -326,15 +326,15 @@ export default function FishingMap({
                 <div style="
                   position: absolute;
                   top: -35px;
-                  background: ${isPartner ? '#fbbf24' : 'var(--color-accent-glow, #00d4aa)'};
-                  color: #000;
+                  background: ${isPartner ? '#a855f7' : 'var(--color-accent-glow, #00d4aa)'};
+                  color: #fff;
                   padding: 4px 10px;
                   border-radius: 12px 12px 12px 0;
                   font-size: 10px;
                   font-weight: 800;
                   white-space: nowrap;
                   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                  border: 1.5px solid ${isPartner ? '#d97706' : 'var(--color-accent-primary)'};
+                  border: 1.5px solid ${isPartner ? '#7e22ce' : 'var(--color-accent-primary)'};
                   animation: bounce 2s infinite;
                 ">
                   ${isPartner ? '👑' : '🐟'} ${spot.resort_active_highlight}
@@ -440,6 +440,12 @@ export default function FishingMap({
                        </span>
                      </div>
                    ))}
+                   
+                   {/* Destaque para Parceiros */}
+                   <div className="flex items-center gap-2 mt-1 border-t border-white/5 pt-2">
+                      <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_#a855f7]" style={{ background: '#a855f7' }} />
+                      <span className="text-[10px] text-purple-400 font-black uppercase">Parceiro</span>
+                   </div>
                 </div>
              </div>
           </div>

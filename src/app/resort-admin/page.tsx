@@ -49,10 +49,11 @@ export default function ResortAdminPage() {
   }, [])
 
   const fetchResorts = async (userId: string) => {
+    // Busca os pesqueiros onde o usuário logado é o dono do Spot vinculado
     const { data, error } = await supabase
       .from('fishing_resorts')
-      .select('*')
-      .eq('owner_id', userId)
+      .select('*, spots!inner(*)')
+      .eq('spots.user_id', userId)
 
     if (error) {
       console.error('Erro ao buscar resorts:', error)

@@ -1,6 +1,65 @@
 -- Script Master para gerar 30 SPOTS PUBLICOS, 15 PESQUEIROS PARCEIROS e 135 CAPTURAS COM FOTO E LIKES
 -- Execute este script no SQL Editor do Supabase
 
+-- 1. Garantir que a tabela de pesqueiros existe (FORA do bloco DO para evitar erro de sintaxe)
+CREATE TABLE IF NOT EXISTS public.fishing_resorts (
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    spot_id           UUID NOT NULL REFERENCES public.spots(id) ON DELETE CASCADE,
+    infrastructure    JSONB DEFAULT '{}'::jsonb,
+    opening_hours     TEXT,
+    prices            JSONB DEFAULT '{}'::jsonb,
+    phone             TEXT,
+    instagram         TEXT,
+    website           TEXT,
+    active_highlight  TEXT,
+    notice_board     TEXT,
+    is_partner        BOOLEAN DEFAULT FALSE,
+    main_species      TEXT[],
+    created_at        TIMESTAMPTZ DEFAULT NOW(),
+    updated_at        TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(spot_id)
+);
+
+-- Habilitar RLS se não estiver
+ALTER TABLE public.fishing_resorts ENABLE ROW LEVEL SECURITY;
+
+-- 2. Garantir colunas novas existam (caso a tabela já existisse de migration antiga)
+ALTER TABLE public.fishing_resorts ADD COLUMN IF NOT EXISTS active_highlight TEXT;
+ALTER TABLE public.fishing_resorts ADD COLUMN IF NOT EXISTS notice_board TEXT;
+
+-- 3. Garantir que a VIEW de mapa está atualizada com os campos de pesqueiro (crítico para as cores no mapa)
+CREATE OR REPLACE VIEW public.spots_map_view AS
+SELECT
+    s.id,
+    s.user_id,
+    s.title,
+    s.description,
+    s.privacy_level,
+    s.fuzz_radius_m,
+    s.water_type,
+    s.is_verified,
+    s.verification_count,
+    s.community_unlock_captures,
+    s.created_at,
+    ST_X(s.location_fuzzed::geometry) AS display_lng,
+    ST_Y(s.location_fuzzed::geometry) AS display_lat,
+    ST_X(s.location::geometry)        AS exact_lng,
+    ST_Y(s.location::geometry)        AS exact_lat,
+    (SELECT COUNT(*) FROM public.captures c WHERE c.spot_id = s.id) AS total_captures,
+    (SELECT se.lure_type FROM public.setups se
+     JOIN public.captures ca ON ca.id = se.capture_id
+     WHERE ca.spot_id = s.id ORDER BY ca.captured_at DESC LIMIT 1) AS latest_lure_type,
+    p.display_name AS owner_name,
+    p.avatar_url   AS owner_avatar,
+    fr.id IS NOT NULL AS is_resort,
+    fr.is_partner     AS is_resort_partner,
+    fr.infrastructure AS resort_infrastructure,
+    fr.active_highlight AS resort_active_highlight
+FROM public.spots s
+JOIN public.profiles p ON p.id = s.user_id
+LEFT JOIN public.fishing_resorts fr ON fr.spot_id = s.id
+WHERE s.is_active = TRUE;
+
 DO $$
 DECLARE
     v_user_id UUID;
@@ -13,7 +72,7 @@ DECLARE
     v_k INTEGER;
     v_total_captures INTEGER := 0;
 BEGIN
-    -- 1. Obter um usuário válido (ordem de criação)
+    -- 2. Obter um usuário válido (ordem de criação)
     SELECT id INTO v_user_id FROM auth.users ORDER BY created_at ASC LIMIT 1;
     
     IF v_user_id IS NULL THEN
@@ -40,7 +99,11 @@ BEGIN
     -- 2. Limpeza profunda
     DELETE FROM public.interactions;
     DELETE FROM public.setups;
-    DELETE FROM public.fishing_resorts;
+    
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'fishing_resorts') THEN
+        DELETE FROM public.fishing_resorts;
+    END IF;
+
     DELETE FROM public.captures;
     DELETE FROM public.spots;
 
