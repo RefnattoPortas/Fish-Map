@@ -5,7 +5,7 @@ import {
   Settings, Clock, DollarSign, Warehouse, Fish, Megaphone, 
   Trophy, Calendar, Plus, Save, ChevronRight, AlertCircle,
   Utensils, Wifi, Anchor, Car, CheckCircle2, User, TrendingUp, BarChart3,
-  Users, Trash2, Edit3, Sparkles, Flame, MapPin
+  Users, Trash2, Edit3, Sparkles, Flame, MapPin, ArrowRight, Lock
 } from 'lucide-react'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -55,15 +55,49 @@ export default function ResortAdminPage() {
       .select('*, spots!inner(*)')
       .eq('spots.user_id', userId)
 
+    // Aproveitamos para pegar o tier do usuário
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_tier')
+      .eq('id', userId)
+      .single()
+
     if (error) {
       console.error('Erro ao buscar resorts:', error)
     } else if (data && data.length > 0) {
       setResorts(data)
       setSelectedResort(data[0])
+      setUser((prev: any) => ({ ...prev, subscription_tier: profile?.subscription_tier || 'free' }))
       await loadDashboardData(data[0])
     } else {
       setLoading(false)
     }
+  }
+
+  const handlePublish = async () => {
+    if (!selectedResort) return
+    
+    // Lógica de Ativação: O botão de publicar deve verificar o subscription_tier. 
+    // Se for 'free', abre a tela de planos. Se for 'partner', muda is_active para TRUE.
+    if (user?.subscription_tier === 'free') {
+      alert('Seu plano atual é Free. Para publicar seu pesqueiro no mapa e torná-lo oficial, você precisa migrar para o Plano Parceiro.')
+      // No futuro aqui abriria o Modal de Planos (Paywall)
+      return
+    }
+
+    setSaving(true)
+    const { error } = await supabase
+      .from('fishing_resorts')
+      .update({ is_active: true })
+      .eq('id', selectedResort.id)
+
+    if (error) {
+       alert('Erro ao publicar: ' + error.message)
+    } else {
+       setSelectedResort({ ...selectedResort, is_active: true })
+       alert('🚀 Sucesso! Seu pesqueiro agora está visível para todos os pescadores no mapa oficial.')
+    }
+    setSaving(false)
   }
 
   const loadDashboardData = async (resort: any) => {
@@ -254,6 +288,41 @@ export default function ResortAdminPage() {
       <main className="flex-1 overflow-y-auto p-8 md:p-16 custom-scrollbar pb-32">
         <div className="max-w-5xl mx-auto fade-in">
           
+          {/* FLUXO DE PUBLICAÇÃO (BANNER SE INATIVO) */}
+          {!selectedResort?.is_active && (
+            <div className="mb-12 glass-elevated border-2 border-accent/30 p-10 rounded-[48px] overflow-hidden relative group">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-accent/10 blur-[100px] rounded-full -mr-20 -mt-20 group-hover:bg-accent/20 transition-all duration-1000" />
+              <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
+                <div className="w-24 h-24 rounded-[32px] bg-accent/20 border border-accent/20 flex items-center justify-center text-accent shadow-[0_0_30px_rgba(0,212,170,0.2)] animate-pulse">
+                  <Megaphone size={40} />
+                </div>
+                <div className="flex-1 text-center md:text-left space-y-3">
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-accent/10 border border-accent/20 rounded-full mb-2">
+                    <Sparkles size={14} className="text-accent" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-accent italic">Rascunho de Negócio</span>
+                  </div>
+                  <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter leading-none">
+                    Seu Pesqueiro <br /><span className="text-accent underline decoration-4 underline-offset-8">Ainda não está no mapa</span>
+                  </h2>
+                  <p className="text-gray-400 font-medium max-w-xl text-lg">
+                    Seu cadastro básico foi salvo. Para ativar o **PIN ROXO** e liberar as funções de **Torneios** e **Publicidade**, publique seu estabelecimento oficial.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-4 w-full md:w-auto">
+                   <button 
+                     onClick={handlePublish}
+                     disabled={saving}
+                     className="bg-accent hover:bg-accent/80 text-dark px-10 py-5 rounded-3xl text-sm font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-2xl shadow-accent/20 transition-all border-b-4 border-dark/20 active:translate-y-1 active:border-b-0"
+                   >
+                     {saving ? <span className="spinner" /> : <CheckCircle2 size={20} />} Publicar Agora
+                   </button>
+                   <p className="text-[9px] text-center text-gray-500 font-black uppercase tracking-widest leading-relaxed">
+                     Acesso Grátis p/ Parceiros <br /> <span className="text-accent underline">Plano Elite Requerido</span>
+                   </p>
+                </div>
+              </div>
+            </div>
+          )}
           {/* TAB: STATS */}
           {activeTab === 'stats' && (
              <div className="space-y-12">

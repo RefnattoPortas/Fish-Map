@@ -94,43 +94,51 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
     }
 
     setLoading(true)
-
     try {
-      // Criar o Resort diretamente (estrutura real do banco: owner_id + name + location)
-      const result = await Promise.race([
-        supabase.from('fishing_resorts').insert([{
-          owner_id: userId,
-          name: data.title,
+      // 1. Criar o Spot primeiro (obrigatório para ter um Resort)
+      const { data: spotData, error: spotError } = await supabase
+        .from('spots')
+        .insert([{
+          user_id: userId,
+          title: data.title,
           description: data.description || null,
-          location: `SRID=4326;POINT(${data.lng} ${data.lat})`,
+          location: `POINT(${data.lng} ${data.lat})`, // PostGIS
+          privacy_level: 'public',
+          water_type: 'lake',
+          is_active: true, // O ponto no mapa
+          fuzz_radius_m: 0
+        }])
+        .select()
+        .single()
+
+      if (spotError) throw spotError
+
+      // 2. Criar o Resort vinculado ao Spot, começando INATIVO e NÃO PARCEIRO
+      const { error: resortError } = await supabase
+        .from('fishing_resorts')
+        .insert([{
+          spot_id: spotData.id,
+          owner_id: userId,
           infrastructure: data.infra as any,
-          opening_hours: { text: data.opening_hours } as any,
+          opening_hours: data.opening_hours || null,
           prices: data.prices as any,
           phone: data.phone || null,
           instagram: data.instagram || null,
           website: data.website || null,
-          is_partner: false, // Sempre começa como false, aguarda aprovação
+          is_partner: false, 
+          is_active: false, // Começa desativado para o fluxo de publicação
           main_species: data.main_species
-        }]),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout supabase')), 10000))
-      ]) as any
+        }])
 
-      if (result.error) throw result.error
-
-      // Se há mensagem para a equipe, registra como notificação interna (opcional)
-      if (data.team_message) {
-        console.log('[WikiFish] Mensagem recebida do proprietário:', data.team_message)
-        // Futuramente: enviar email para equipe WikiFish
-      }
+      if (resortError) throw resortError
 
       setSuccess(true)
       setTimeout(() => {
-        onSuccess?.()
-        onClose()
-      }, 4000)
+        window.location.href = '/resort-admin' // Redireciona para o fluxo de revisão
+      }, 3000)
     } catch (err: any) {
       console.error('Erro ao salvar pesqueiro:', err)
-      alert('Erro ao salvar: ' + err.message)
+      alert('Erro ao salvar: ' + (err.message || 'Erro desconhecido'))
     } finally {
       setLoading(false)
     }
@@ -141,47 +149,21 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
     return (
       <div className="fixed inset-0 z-[1600] flex items-center justify-center p-4 bg-black/95">
         <div className="glass-elevated fade-in text-center p-12 max-w-md rounded-[40px] border border-accent/20 space-y-6">
-          <div className="text-7xl animate-bounce">🏡</div>
+          <div className="text-7xl animate-bounce">📋</div>
           <div>
             <h2 className="text-3xl font-black text-accent uppercase italic tracking-tighter mb-3">
-              Pesqueiro no Mapa!
+              Quase lá!
             </h2>
             <p className="text-gray-300 text-base leading-relaxed">
-              Seu pesqueiro já está no mapa! Em breve entraremos em contato para{' '}
-              <span className="text-accent font-bold">ativar as funções premium</span>.
+              O rascunho do seu pesqueiro foi salvo com sucesso.
             </p>
           </div>
           <div className="flex items-center gap-3 px-6 py-4 bg-accent/10 rounded-2xl border border-accent/20 text-left">
-            <Star size={20} className="text-amber-400 fill-amber-400 shrink-0" />
+            <Plus size={20} className="text-accent shrink-0" />
             <p className="text-sm text-gray-400">
-              Após a análise da nossa equipe, seu perfil será elevado para <strong className="text-amber-400">Parceiro Elite</strong>.
+              Estamos te enviando para o seu <strong className="text-white">Painel de Administração</strong> para publicar no mapa.
             </p>
           </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Security Filter View — bloqueia usuários free e guests
-  if (!checkingTier && (userId === 'guest-user' || userTier === 'free')) {
-    return (
-      <div className="fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-black/90">
-        <div className="glass-elevated fade-in text-center p-12 max-w-sm rounded-[32px] border border-white/5">
-           <div className="w-20 h-20 bg-amber-500/10 rounded-3xl flex items-center justify-center text-amber-500 mx-auto mb-6">
-              <Star size={40} className="fill-current" />
-           </div>
-           <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-4">Acesso Restrito</h2>
-           <p className="text-gray-400 text-sm mb-8">
-             Apenas usuários com assinatura <span className="text-amber-500 font-bold italic underline">Elite ou Parceiro</span> podem registrar estabelecimentos oficiais no mapa.
-           </p>
-           <div className="space-y-3">
-              <button 
-                onClick={onClose} 
-                className="btn-secondary w-full py-3 rounded-2xl font-bold"
-              >
-                Voltar
-              </button>
-           </div>
         </div>
       </div>
     )
