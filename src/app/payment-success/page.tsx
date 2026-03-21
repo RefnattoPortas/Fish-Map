@@ -110,7 +110,11 @@ function useConfetti(canvasRef: React.RefObject<HTMLCanvasElement | null>) {
   }, [canvasRef])
 }
 
-export default function PaymentSuccessPage() {
+import { Suspense } from 'react'
+
+// ... (confetti engine remains the same)
+
+function PaymentSuccessContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -197,7 +201,6 @@ export default function PaymentSuccessPage() {
         </p>
       </div>
 
-      {/* Styles */}
       <style jsx>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
@@ -205,5 +208,13 @@ export default function PaymentSuccessPage() {
         }
       `}</style>
     </div>
+  )
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0a0f1a]" />}>
+      <PaymentSuccessContent />
+    </Suspense>
   )
 }
