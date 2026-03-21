@@ -301,6 +301,17 @@ function HomeContent() {
     if (spot) handleSpotSelect(spot)
   }, [filteredSpots, handleSpotSelect])
 
+  // Contagem de pontos visíveis na viewport
+  const viewportSpotCount = useMemo(() => {
+    if (!mapBounds) return filteredSpots.length
+    return filteredSpots.filter(s => {
+      const lat = s.display_lat ?? s.exact_lat
+      const lng = s.display_lng ?? s.exact_lng
+      if (lat == null || lng == null) return false
+      return lat >= mapBounds.south && lat <= mapBounds.north && lng >= mapBounds.west && lng <= mapBounds.east
+    }).length
+  }, [filteredSpots, mapBounds])
+
   const handleVerify = useCallback((spotId: string) => {
     console.log('Verificar spot:', spotId)
   }, [])
@@ -334,7 +345,7 @@ function HomeContent() {
         <MapFiltersBar
           filters={filters}
           onChange={setFilters}
-          spotCount={filteredSpots.length}
+          spotCount={viewportSpotCount}
           user={user}
           theme={mapTheme}
           highlights={viewportHighlights}

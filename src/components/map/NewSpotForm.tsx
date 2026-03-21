@@ -18,6 +18,8 @@ import { savePendingSpot } from '@/lib/offline/indexeddb'
 export default function NewSpotForm({ userId, isOnline, onClose, onSuccess, initialLat, initialLng }: NewSpotFormProps) {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [data, setData] = useState({
     title: '',
     description: '',
@@ -28,6 +30,30 @@ export default function NewSpotForm({ userId, isOnline, onClose, onSuccess, init
   })
 
   const supabase = getSupabaseClient() as any
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPhotoFile(file)
+    const reader = new FileReader()
+    reader.onloadend = () => setPhotoPreview(reader.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  const uploadPhoto = async (spotId: string): Promise<string | null> => {
+    if (!photoFile) return null
+    try {
+      const ext = photoFile.name.split('.').pop()
+      const path = `spots/${spotId}/cover.${ext}`
+      const { error } = await supabase.storage.from('photos').upload(path, photoFile, { upsert: true })
+      if (error) { console.error('Upload foto erro:', error); return null }
+      const { data: urlData } = supabase.storage.from('photos').getPublicUrl(path)
+      return urlData?.publicUrl || null
+    } catch (err) {
+      console.error('Erro upload foto:', err)
+      return null
+    }
+  }
 
   const handleSave = async () => {
     if (!data.title) return
@@ -83,7 +109,7 @@ export default function NewSpotForm({ userId, isOnline, onClose, onSuccess, init
             water_type: data.water_type,
             location: `SRID=4326;POINT(${data.lng} ${data.lat})`,
             is_active: true
-          }]),
+          }]).select('id').single(),
           new Promise((_, reject) => setTimeout(() => reject(new Error('timeout supabase')), 10000))
         ]) as any
 
@@ -91,6 +117,15 @@ export default function NewSpotForm({ userId, isOnline, onClose, onSuccess, init
           console.error('[NewSpotForm] Erro retornado pelo Supabase:', result.error)
           throw result.error
         }
+
+        // Upload da foto se escolhida
+        if (result.data?.id && photoFile) {
+          const photoUrl = await uploadPhoto(result.data.id)
+          if (photoUrl) {
+            await supabase.from('spots').update({ photo_url: photoUrl }).eq('id', result.data.id)
+          }
+        }
+
         console.log('[NewSpotForm] Sucesso no Supabase.')
       } else {
         console.log('[NewSpotForm] Modo offline ou Guest Detectado. Salvando via IDB.')
@@ -271,10 +306,42 @@ export default function NewSpotForm({ userId, isOnline, onClose, onSuccess, init
             </div>
           </div>
 
-          {/* Upload de Foto (Placeholders) */}
-          <button className="btn-secondary" style={{ width: '100%', height: 48, borderStyle: 'dashed' }}>
-            <Camera size={18} /> Adicionar Foto do Local
-          </button>
+          {/* Upload de Foto */}
+          <div>
+            <label className="label"><Camera size={14} /> Foto do Local</label>
+            {photoPreview ? (
+              <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', height: 160 }}>
+                <img src={photoPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <button 
+                  onClick={() => { setPhotoFile(null); setPhotoPreview(null) }}
+                  className="btn-secondary"
+                  style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, padding: 0, borderRadius: '50%', background: 'rgba(0,0,0,0.6)' }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <label 
+                htmlFor="spot-photo-input"
+                className="btn-secondary" 
+                style={{ 
+                  width: '100%', height: 80, borderStyle: 'dashed', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6
+                }}
+              >
+                <Camera size={20} />
+                <span style={{ fontSize: 12, fontWeight: 600 }}>Tirar Foto ou Escolher do Dispositivo</span>
+              </label>
+            )}
+            <input 
+              id="spot-photo-input"
+              type="file" 
+              accept="image/*"
+              capture="environment"
+              onChange={handlePhotoSelect}
+              style={{ display: 'none' }}
+            />
+          </div>
         </div>
 
         {/* Footer */}

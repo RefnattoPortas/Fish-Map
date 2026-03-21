@@ -4,6 +4,10 @@ ALTER TABLE public.fishing_resorts ADD COLUMN IF NOT EXISTS is_active BOOLEAN DE
 ALTER TABLE public.fishing_resorts ADD COLUMN IF NOT EXISTS owner_id UUID REFERENCES auth.users(id);
 ALTER TABLE public.fishing_resorts ADD COLUMN IF NOT EXISTS active_highlight TEXT;
 ALTER TABLE public.fishing_resorts ADD COLUMN IF NOT EXISTS notice_board TEXT;
+ALTER TABLE public.fishing_resorts ADD COLUMN IF NOT EXISTS photos JSONB DEFAULT '[]'::jsonb;
+
+-- Garantir coluna photo_url em spots
+ALTER TABLE public.spots ADD COLUMN IF NOT EXISTS photo_url TEXT;
 
 -- 2. ATUALIZAR VIEW DE MAPA (spots_map_view)
 -- A lógica: 
@@ -35,11 +39,14 @@ SELECT
      WHERE ca.spot_id = s.id ORDER BY ca.captured_at DESC LIMIT 1) AS latest_lure_type,
     p.display_name AS owner_name,
     p.avatar_url   AS owner_avatar,
+    -- Foto: prioridade para foto do resort (slot 0), senão foto do spot
+    COALESCE(fr.photos->>0, s.photo_url) AS photo_url,
     fr.id IS NOT NULL AS is_resort,
     fr.is_partner     AS is_resort_partner,
     fr.infrastructure AS resort_infrastructure,
     fr.active_highlight AS resort_active_highlight,
-    fr.is_active      AS resort_is_active -- Mantemos a coluna caso o front precise saber
+    fr.is_active      AS resort_is_active, -- Mantemos a coluna caso o front precise saber
+    fr.photos         AS resort_photos
 FROM public.spots s
 JOIN public.profiles p ON p.id = s.user_id
 LEFT JOIN public.fishing_resorts fr ON fr.spot_id = s.id

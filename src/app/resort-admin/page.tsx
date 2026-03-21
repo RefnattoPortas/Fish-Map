@@ -5,7 +5,7 @@ import {
   Settings, Clock, DollarSign, Warehouse, Fish, Megaphone, 
   Trophy, Calendar, Plus, Save, ChevronRight, AlertCircle,
   Utensils, Wifi, Anchor, Car, CheckCircle2, User, TrendingUp, BarChart3,
-  Users, Trash2, Edit3, Sparkles, Flame, MapPin, ArrowRight, Lock
+  Users, Trash2, Edit3, Sparkles, Flame, MapPin, ArrowRight, Lock, Camera, X, ImagePlus
 } from 'lucide-react'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -31,6 +31,7 @@ export default function ResortAdminPage() {
     prize_pool: '',
     max_participants: 50
   })
+  const [uploadingPhoto, setUploadingPhoto] = useState<number | null>(null)
 
   const supabase = getSupabaseClient() as any
   const router = useRouter()
@@ -473,6 +474,76 @@ export default function ResortAdminPage() {
                            )
                          })}
                       </div>
+                   </div>
+                </div>
+
+                {/* Galeria de Fotos (5 fotos) */}
+                <div className="glass p-10 rounded-[40px] border border-white/5 space-y-6">
+                   <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4 block">Galeria de Fotos (Máx. 5)</label>
+                   <p className="text-xs text-gray-500 mb-4">A 1ª foto será a capa exibida ao abrir as informações do pesqueiro no mapa.</p>
+                   <div className="grid grid-cols-5 gap-4">
+                      {[0, 1, 2, 3, 4].map(idx => {
+                        const photos = (selectedResort as any)?.photos || []
+                        const photo = photos[idx]
+                        return (
+                          <div key={idx} className="relative aspect-square rounded-2xl border-2 border-dashed overflow-hidden group" style={{ borderColor: idx === 0 ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.1)' }}>
+                            {photo ? (
+                              <>
+                                <img src={photo} alt={`Foto ${idx+1}`} className="w-full h-full object-cover" />
+                                <button 
+                                  onClick={() => {
+                                    const newPhotos = [...photos]
+                                    newPhotos.splice(idx, 1)
+                                    setSelectedResort({ ...selectedResort, photos: newPhotos })
+                                  }}
+                                  className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500/80 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X size={12} />
+                                </button>
+                                {idx === 0 && (
+                                  <div className="absolute bottom-0 left-0 right-0 bg-accent/80 text-dark text-[8px] font-black uppercase text-center py-1 tracking-widest">Capa</div>
+                                )}
+                              </>
+                            ) : (
+                              <label htmlFor={`resort-photo-${idx}`} className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors">
+                                {uploadingPhoto === idx ? (
+                                  <span className="spinner" style={{ width: 20, height: 20 }} />
+                                ) : (
+                                  <>
+                                    <ImagePlus size={20} className="text-gray-600 mb-1" />
+                                    <span className="text-[9px] text-gray-600 font-bold">{idx === 0 ? 'CAPA' : `Foto ${idx+1}`}</span>
+                                  </>
+                                )}
+                              </label>
+                            )}
+                            <input 
+                              id={`resort-photo-${idx}`}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0]
+                                if (!file || !selectedResort) return
+                                setUploadingPhoto(idx)
+                                try {
+                                  const ext = file.name.split('.').pop()
+                                  const path = `resorts/${selectedResort.id}/photo_${idx}.${ext}`
+                                  const { error } = await supabase.storage.from('photos').upload(path, file, { upsert: true })
+                                  if (error) { alert('Erro no upload: ' + error.message); return }
+                                  const { data: urlData } = supabase.storage.from('photos').getPublicUrl(path)
+                                  const newPhotos = [...((selectedResort as any)?.photos || [])]
+                                  newPhotos[idx] = urlData?.publicUrl
+                                  setSelectedResort({ ...selectedResort, photos: newPhotos })
+                                } catch (err: any) {
+                                  alert('Erro: ' + err.message)
+                                } finally {
+                                  setUploadingPhoto(null)
+                                }
+                              }}
+                            />
+                          </div>
+                        )
+                      })}
                    </div>
                 </div>
 
