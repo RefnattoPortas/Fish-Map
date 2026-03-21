@@ -1,7 +1,8 @@
 'use client'
 
-import { X, Crown, Zap, Map, FileBarChart, Download, Sparkles, CheckCircle2 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { X, Crown, Zap, Map, FileBarChart, Download, Sparkles, CheckCircle2, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { getSupabaseClient } from '@/lib/supabase/client'
 
 interface PaywallModalProps {
   isOpen: boolean
@@ -9,8 +10,75 @@ interface PaywallModalProps {
   featureName?: string
 }
 
+// ======================================================
+// PLANOS — Substitua pelos seus Price IDs reais do Stripe
+// ======================================================
+const PLANS = {
+  pro: {
+    name: 'Fish Pro',
+    priceId: 'price_PRO_PLACEHOLDER', // TODO: Substituir pelo Price ID real
+    price: 'R$ 19,90/mês',
+    plan: 'pro',
+  },
+  partner: {
+    name: 'Fish Partner',
+    priceId: 'price_PARTNER_PLACEHOLDER', // TODO: Substituir pelo Price ID real
+    price: 'R$ 49,90/mês',
+    plan: 'partner',
+  },
+}
+
 export default function PaywallModal({ isOpen, onClose, featureName }: PaywallModalProps) {
+  const [loading, setLoading] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<'pro' | 'partner'>('pro')
+
   if (!isOpen) return null
+
+  const handleCheckout = async () => {
+    setLoading(true)
+    try {
+      const supabase = getSupabaseClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        alert('Você precisa estar logado para assinar.')
+        setLoading(false)
+        return
+      }
+
+      const plan = PLANS[selectedPlan]
+
+      // Chamar a Edge Function
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-checkout-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            priceId: plan.priceId,
+            plan: plan.plan,
+          }),
+        }
+      )
+
+      const data = await response.json()
+
+      if (data.url) {
+        // Redirecionar para o Stripe Checkout
+        window.location.href = data.url
+      } else {
+        alert('Erro ao iniciar pagamento: ' + (data.error || 'Tente novamente.'))
+      }
+    } catch (err: any) {
+      console.error('Erro no checkout:', err)
+      alert('Erro ao conectar com o gateway de pagamento.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-[3000] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
@@ -47,6 +115,27 @@ export default function PaywallModal({ isOpen, onClose, featureName }: PaywallMo
             </div>
           </div>
 
+          {/* Seleção de Plano */}
+          <div className="grid grid-cols-2 gap-3">
+            {([['pro', 'Fish Pro', 'R$ 19,90', '/mês'], ['partner', 'Fish Partner', 'R$ 49,90', '/mês']] as const).map(([key, name, price, period]) => (
+              <button
+                key={key}
+                onClick={() => setSelectedPlan(key)}
+                className={`p-5 rounded-3xl border-2 transition-all text-left ${
+                  selectedPlan === key 
+                    ? 'border-accent bg-accent/5 shadow-lg shadow-accent/10' 
+                    : 'border-white/10 hover:border-white/20'
+                }`}
+              >
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">{name}</p>
+                <p className="text-2xl font-black text-white">{price}<span className="text-xs text-gray-500">{period}</span></p>
+                {key === 'partner' && (
+                  <p className="text-[9px] text-purple-400 font-bold mt-1">+ Pin Roxo + Torneios</p>
+                )}
+              </button>
+            ))}
+          </div>
+
           <div className="grid grid-cols-1 gap-4 text-left">
              {[
                 { title: 'Heatmap de Atividade', desc: 'Veja onde as feras estão batendo agora.', icon: Zap },
@@ -68,10 +157,23 @@ export default function PaywallModal({ isOpen, onClose, featureName }: PaywallMo
           </div>
 
           <div className="pt-6 space-y-4">
-             <button className="w-full btn-primary py-6 text-sm font-black uppercase tracking-[0.4em] shadow-2xl shadow-accent/30 hover:scale-105 active:scale-95 transition-all">
-                Assinar Agora — R$ 19,90/mês
+             <button 
+               onClick={handleCheckout}
+               disabled={loading}
+               className="w-full btn-primary py-6 text-sm font-black uppercase tracking-[0.4em] shadow-2xl shadow-accent/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+             >
+               {loading ? (
+                 <>
+                   <Loader2 size={20} className="animate-spin" />
+                   Conectando ao Gateway...
+                 </>
+               ) : (
+                 <>Assinar {PLANS[selectedPlan].name} — {PLANS[selectedPlan].price}</>
+               )}
              </button>
-             <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Cancele quando quiser · Site 100% Seguro</p>
+             <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">
+               Pagamento seguro via Stripe · Cancele quando quiser
+             </p>
           </div>
         </div>
       </div>
