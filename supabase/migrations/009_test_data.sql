@@ -155,50 +155,55 @@ BEGIN
         END LOOP;
     END LOOP;
 
-    -- 4. Gerar 15 PESQUEIROS PARCEIROS (Vinculados a novos Spots)
-    FOR v_i IN 1..15 LOOP
-        INSERT INTO public.spots (
-            id, user_id, title, description, privacy_level, water_type, location, is_active, fuzz_radius_m
-        ) VALUES (
-            gen_random_uuid(),
-            v_user_id,
-            'Pesqueiro Parceiro ' || v_i,
-            'Um dos melhores pesqueiros parceiros do FishMap.',
-            'public',
-            'lake',
-            ST_SetSRID(ST_MakePoint(-47 + (random() * 4), -23 + (random() * 4)), 4326)::geography,
-            true,
-            0
-        ) RETURNING id INTO v_spot_id;
+    RAISE NOTICE 'Gerando capturas por spot...';
 
-        INSERT INTO public.fishing_resorts (
-            spot_id, phone, website, is_partner, main_species, infrastructure
-        ) VALUES (
-            v_spot_id,
-            '(11) 98888-777' || v_i,
-            'www.parceiro' || v_i || '.com',
-            true,
-            ARRAY['Tambacu', 'Pirarara'],
-            '{"restaurante": true, "banheiros": true, "wi_fi": true, "pousada": true}'::jsonb
-        );
-
-        -- Capturas no pesqueiro (3 por resort = 45)
-        FOR v_j IN 1..3 LOOP
-            v_total_captures := v_total_captures + 1;
-            INSERT INTO public.captures (
-                user_id, spot_id, species, weight_kg, length_cm, captured_at, photo_url, is_public
+    -- 4. Gerar PESQUEIROS PARCEIROS para TODOS OS USUÁRIOS (para garantir acesso ao Admin)
+    FOR v_user_id IN (SELECT id FROM auth.users) LOOP
+        FOR v_i IN 1..5 LOOP
+            INSERT INTO public.spots (
+                id, user_id, title, description, privacy_level, water_type, location, is_active, fuzz_radius_m
             ) VALUES (
+                gen_random_uuid(),
                 v_user_id,
+                'Pesqueiro do Usuário ' || v_i,
+                'Um dos melhores pesqueiros parceiros do FishMap.',
+                'public',
+                'lake',
+                ST_SetSRID(ST_MakePoint(-47 + (random() * 4), -23 + (random() * 4)), 4326)::geography,
+                true,
+                0
+            ) RETURNING id INTO v_spot_id;
+
+            INSERT INTO public.fishing_resorts (
+                spot_id, phone, website, is_partner, main_species, infrastructure, active_highlight
+            ) VALUES (
                 v_spot_id,
-                v_species[floor(random() * 10 + 1)],
-                random() * 15 + 2,
-                random() * 80 + 30,
-                now(),
-                'https://placehold.co/600x400?text=Resort+' || v_i || '+Peixe+' || v_j,
-                true
+                '(11) 98888-777' || v_i,
+                'www.seupesqueiro.com',
+                true,
+                ARRAY['Tambacu', 'Pirarara'],
+                '{"restaurante": true, "banheiros": true, "wi_fi": true, "pousada": true}'::jsonb,
+                'O PESQUEIRO ESTÁ ATIVO!'
             );
+
+            -- Capturas no pesqueiro (2 por resort)
+            FOR v_j IN 1..2 LOOP
+                v_total_captures := v_total_captures + 1;
+                INSERT INTO public.captures (
+                    user_id, spot_id, species, weight_kg, length_cm, captured_at, photo_url, is_public
+                ) VALUES (
+                    v_user_id,
+                    v_spot_id,
+                    v_species[floor(random() * 10 + 1)],
+                    random() * 15 + 2,
+                    random() * 80 + 30,
+                    now(),
+                    'https://placehold.co/600x400?text=Pesqueiro+User+' || v_i,
+                    true
+                );
+            END LOOP;
         END LOOP;
     END LOOP;
 
-    RAISE NOTICE 'Dados gerados: 30 spots genéricos + 15 pesqueiros + 135 capturas com foto e curtidas.';
+    RAISE NOTICE 'Dados gerados com sucesso!';
 END $$;
