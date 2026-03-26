@@ -3,13 +3,15 @@
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import Sidebar from '@/components/layout/Sidebar'
 import SpotDetailsView from '@/components/map/SpotDetailsView'
 import MapFiltersBar, { MapFilters } from '@/components/map/MapFiltersBar'
 import type { SpotMapView } from '@/types/database'
-import { Plus, RefreshCw, MapPin, Warehouse, Flame, Download, Info } from 'lucide-react'
+import { Plus, RefreshCw, MapPin, Warehouse, Flame, Download, Info, Fish } from 'lucide-react'
 import type { ResortHighlight } from '@/components/map/MapFiltersBar'
 import PaywallModal from '@/components/common/PaywallModal'
+import WelcomeOverlay from '@/components/common/WelcomeOverlay'
 
 // Importação dinâmica do mapa (evita erro de SSR com Leaflet)
 const FishingMap = dynamic(
@@ -47,7 +49,7 @@ const DEMO_SPOTS: SpotMapView[] = [
     resort_id: null, is_resort: false, opening_hours: null, phone: null, instagram: null, 
     website: null, resort_infrastructure: null, resort_prices: null, is_resort_partner: false, 
     resort_main_species: null, resort_active_highlight: null, resort_notice_board: null,
-    open_tournaments_count: 0
+    open_tournaments_count: 0, searchable_species: null
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440002', user_id: '00000000-0000-0000-0000-000000000002', title: 'Lago Corumbá — Dourado Bom',
@@ -61,7 +63,7 @@ const DEMO_SPOTS: SpotMapView[] = [
     resort_id: null, is_resort: false, opening_hours: null, phone: null, instagram: null, 
     website: null, resort_infrastructure: null, resort_prices: null, is_resort_partner: false, 
     resort_main_species: null, resort_active_highlight: null, resort_notice_board: null,
-    open_tournaments_count: 0
+    open_tournaments_count: 0, searchable_species: null
   },
 ]
 
@@ -86,6 +88,7 @@ function HomeContent() {
   const [paywallFeature, setPaywallFeature] = useState('')
   const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('light')
   const [mapBounds, setMapBounds] = useState<{ north: number, south: number, east: number, west: number } | null>(null)
+  const [showWelcome, setShowWelcome] = useState(false)
 
   // Ler tema local do mapa
   useEffect(() => {
@@ -103,10 +106,11 @@ function HomeContent() {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('*, subscription_tier')
+          .select('*')
           .eq('id', user.id)
           .single()
-        setUser({ ...user, profile })
+        setUser({ ...user, profile: profile as any })
+        if ((profile as any)?.is_first_login) setShowWelcome(true)
       } else {
         setUser(null)
       }
@@ -115,10 +119,11 @@ function HomeContent() {
         if (session?.user) {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('*, subscription_tier')
+            .select('*')
             .eq('id', session.user.id)
             .single()
-          setUser({ ...session.user, profile })
+          setUser({ ...session.user, profile: profile as any })
+          if ((profile as any)?.is_first_login) setShowWelcome(true)
         } else {
           setUser(null)
         }
@@ -367,6 +372,22 @@ function HomeContent() {
           onHighlightClick={handleHighlightClick}
         />
 
+        {/* Banner de Presente de Lançamento (Topo do Mapa) */}
+        {!user?.profile?.subscription_tier && (
+          <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[1000] flex animate-in slide-in-from-top duration-500">
+            <div className="glass px-6 py-3 rounded-2xl border border-cyan-500/50 shadow-[0_0_30px_rgba(0,255,255,0.2)] flex items-center gap-3 whitespace-nowrap overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              <span className="text-xl">🎁</span>
+              <p className="text-[11px] md:text-sm font-black text-white uppercase tracking-widest">
+                <span className="text-cyan-400">Presente de Lançamento:</span> Ganhe 3 meses de acesso TOTAL GRÁTIS!
+              </p>
+              <Link href="/login" className="ml-2 bg-cyan-500 text-dark text-[9px] font-black px-3 py-1.5 rounded-lg hover:bg-cyan-400 transition-colors uppercase tracking-widest">
+                Resgatar
+              </Link>
+            </div>
+          </div>
+        )}
+
               <FishingMap
                 spots={filteredSpots}
                 onSpotSelect={handleSpotSelect}
@@ -550,13 +571,30 @@ function HomeContent() {
           featureName={paywallFeature}
         />
       )}
+
+      {showWelcome && (
+        <WelcomeOverlay 
+          onClose={() => {
+            setShowWelcome(false)
+            // Atualizar o state do usuário localmente também
+            setUser((prev: any) => prev ? { ...prev, profile: { ...prev.profile, is_first_login: false } } : null)
+          }} 
+        />
+      )}
     </div>
   )
 }
 
 export default function HomePage() {
   return (
-    <Suspense fallback={<div className="h-screen w-screen bg-dark flex items-center justify-center text-white">Carregando Fish-Map...</div>}>
+    <Suspense fallback={<div className="h-screen w-screen bg-[#0a0f1a] flex flex-col items-center justify-center text-white">
+      <div className="w-32 h-32 mb-4 animate-pulse">
+        <img src="/images/logo.png" alt="Fishgada" className="w-full h-full object-contain" />
+      </div>
+      <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden">
+        <div className="h-full bg-cyan-500 animate-progress" style={{ width: '100%' }} />
+      </div>
+    </div>}>
       <HomeContent />
     </Suspense>
   )

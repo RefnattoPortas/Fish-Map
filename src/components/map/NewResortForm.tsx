@@ -366,9 +366,9 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
             </div>
           </div>
 
-          {/* Mensagem para a equipe WikiFish */}
+          {/* Mensagem para a equipe Fishgada */}
           <div>
-            <label className="label"><MessageSquare size={14} /> Mensagem para a Equipe WikiFish</label>
+            <label className="label"><MessageSquare size={14} /> Mensagem para a Equipe Fishgada</label>
             <textarea 
               className="input" 
               placeholder="Dúvidas, expectativas ou informações adicionais sobre seu pesqueiro..." 

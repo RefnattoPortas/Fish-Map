@@ -113,6 +113,10 @@ export default function Sidebar({
     }
   }, [isOpenMobile])
 
+  const trialDaysLeft = profile?.trial_ends_at 
+    ? Math.max(0, Math.ceil((new Date(profile.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
   return (
     <>
       {/* Mobile Toggle Button (Hidden on Map page to use custom embedded button instead) */}
@@ -164,22 +168,20 @@ export default function Sidebar({
       <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden h-full">
         {/* Logo */}
         <div className="flex items-center gap-3 p-3 mb-2 mt-1" style={{ minHeight: 60 }}>
-          <div
-            className="flex-shrink-0 flex items-center justify-center rounded-xl glow-green cursor-pointer"
+          <Link href="/" className="flex-shrink-0 flex items-center justify-center rounded-xl overflow-hidden cursor-pointer"
             style={{
-              width: 40, height: 40,
-              background: 'linear-gradient(135deg, var(--color-accent-primary), #0077b6)',
+              width: expanded ? 180 : 40, 
+              height: 40,
+              transition: 'all 0.3s ease'
             }}
-            onClick={() => setExpanded(!expanded)}
           >
-            <Fish size={20} color="white" />
-          </div>
-          {expanded && (
-            <div className="fade-in overflow-hidden">
-              <p className="font-bold text-gradient" style={{ fontSize: 16, lineHeight: 1 }}>Fish-Map</p>
-              <p style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Pesca Esportiva</p>
-            </div>
-          )}
+            <img 
+              src="/images/logo.png" 
+              alt="Fishgada" 
+              className={`h-full object-contain ${expanded ? 'w-full' : 'w-auto'}`}
+              style={{ filter: 'drop-shadow(0 0 10px rgba(0,255,255,0.3))' }}
+            />
+          </Link>
         </div>
 
         {/* User Profile Section */}
@@ -194,7 +196,7 @@ export default function Sidebar({
                     height: expanded ? 48 : 36, 
                     border: profile?.subscription_tier === 'partner'
                         ? '2px solid #a855f7'
-                        : profile?.subscription_tier === 'pro'
+                        : (profile?.subscription_tier === 'pro' || trialDaysLeft > 0)
                         ? '2px solid #fbbf24'
                         : '2px solid var(--color-accent-primary)' 
                   }}
@@ -207,7 +209,7 @@ export default function Sidebar({
                     </div>
                   )}
                 </div>
-                {profile?.subscription_tier === 'pro' && (
+                {(profile?.subscription_tier === 'pro' || trialDaysLeft > 0) && (
                   <div className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center border-2 border-[#0a0f1a] shadow-lg animate-bounce z-10">
                     <Crown size={10} className="text-dark fill-dark" />
                   </div>
@@ -239,13 +241,15 @@ export default function Sidebar({
                     </div>
                     
                     {/* Badge de Assinatura */}
-                    {profile?.subscription_tier === 'pro' && (
-                      <span className="text-[8px] font-black bg-amber-500 text-dark px-1.5 py-0.5 rounded-md shadow-lg shadow-amber-500/20 animate-pulse">PRO</span>
+                    {(profile?.subscription_tier === 'pro' || trialDaysLeft > 0) && (
+                      <span className="text-[8px] font-black bg-amber-500 text-dark px-1.5 py-0.5 rounded-md shadow-lg shadow-amber-500/20 animate-pulse">
+                        {trialDaysLeft > 0 && !profile?.subscription_tier ? 'TRIAL' : 'PRO'}
+                      </span>
                     )}
                     {profile?.subscription_tier === 'partner' && (
                       <span className="text-[8px] font-black bg-purple-500 text-white px-1.5 py-0.5 rounded-md shadow-lg shadow-purple-500/20 animate-pulse">PARCEIRO</span>
                     )}
-                    {(!profile?.subscription_tier || profile?.subscription_tier === 'free') && (
+                    {(!profile?.subscription_tier && trialDaysLeft <= 0) && (
                       <Link href="/profile?tab=billing" className="text-[8px] font-black text-accent hover:underline uppercase tracking-tighter">Virar Pro</Link>
                     )}
                   </div>
@@ -267,6 +271,15 @@ export default function Sidebar({
                 </div>
               )}
             </div>
+            {/* Trial Counter */}
+            {trialDaysLeft > 0 && (
+              <div className={`px-2 mb-2 transition-all ${expanded ? 'block' : 'hidden'}`}>
+                <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-2 flex items-center justify-between">
+                  <span className="text-[9px] font-black text-cyan-400 uppercase tracking-widest">Trial Premium</span>
+                  <span className="text-[10px] font-bold text-white whitespace-nowrap">{trialDaysLeft} dias restando</span>
+                </div>
+              </div>
+            )}
             {!expanded && (
               <div className="mt-2 h-1 w-8 mx-auto bg-white/5 rounded-full overflow-hidden">
                 <div

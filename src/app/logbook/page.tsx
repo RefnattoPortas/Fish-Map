@@ -21,7 +21,7 @@ export default function LogbookPage() {
           <div className="text-center space-y-4 max-w-md">
             <h1 className="text-4xl font-black text-white tracking-tight uppercase italic">Diário de Pesca</h1>
             <p className="text-gray-400 font-bold text-sm tracking-wide">
-              Em breve: Sua própria enciclopédia de pescarias. Guardaremos cada batida, cada isca e cada história vivida no WikiFish.
+              Em breve: Sua própria enciclopédia de pescarias. Guardaremos cada batida, cada isca e cada história vivida no Fishgada.
             </p>
           </div>
 

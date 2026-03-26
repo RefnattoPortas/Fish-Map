@@ -17,7 +17,7 @@ export const USER_RANKS: RankInfo[] = [
     icon: Fish,
     minLevel: 1,
     maxLevel: 1,
-    phrases: ['Começando a história no WikiFish!', 'O primeiro de muitos.', 'O futuro mestre está nascendo.']
+    phrases: ['Começando a história no Fishgada!', 'O primeiro de muitos.', 'O futuro mestre está nascendo.']
   },
   {
     title: 'Pescador de Barranco',

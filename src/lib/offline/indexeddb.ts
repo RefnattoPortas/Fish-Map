@@ -1,5 +1,5 @@
 /**
- * WikiFish Offline Sync — IndexedDB via idb
+ * Fishgada Offline Sync — IndexedDB via idb
  * ==========================================
  * Salva pontos e capturas localmente quando offline.
  * Ao recuperar sinal, sincroniza com Supabase automaticamente.
@@ -8,7 +8,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 
 // Schema do IndexedDB
-interface FishMapOfflineDB {
+interface FishgadaOfflineDB {
   pending_spots: {
     key: string
     value: {
@@ -76,11 +76,11 @@ interface FishMapOfflineDB {
   }
 }
 
-let db: IDBPDatabase<FishMapOfflineDB> | null = null
+let db: IDBPDatabase<FishgadaOfflineDB> | null = null
 
-export async function getOfflineDB(): Promise<IDBPDatabase<FishMapOfflineDB>> {
+export async function getOfflineDB(): Promise<IDBPDatabase<FishgadaOfflineDB>> {
   if (!db) {
-    db = await openDB<FishMapOfflineDB>('wikifish-offline', 1, {
+    db = await openDB<FishgadaOfflineDB>('wikifish-offline', 1, {
       upgrade(database) {
         // Store de spots pendentes
         const spotsStore = database.createObjectStore('pending_spots', {
@@ -104,7 +104,7 @@ export async function getOfflineDB(): Promise<IDBPDatabase<FishMapOfflineDB>> {
 
 // ─── SPOTS ────────────────────────────────────────────────────
 
-export async function savePendingSpot(spot: Omit<FishMapOfflineDB['pending_spots']['value'], 'synced'>) {
+export async function savePendingSpot(spot: Omit<FishgadaOfflineDB['pending_spots']['value'], 'synced'>) {
   const database = await getOfflineDB()
   await database.put('pending_spots', { ...spot, synced: 0 })
   console.log('[Offline] Spot salvo localmente:', spot.id)
@@ -125,7 +125,7 @@ export async function markSpotSynced(id: string, supabaseId: string) {
 
 // ─── CAPTURES ─────────────────────────────────────────────────
 
-export async function savePendingCapture(capture: Omit<FishMapOfflineDB['pending_captures']['value'], 'synced'>) {
+export async function savePendingCapture(capture: Omit<FishgadaOfflineDB['pending_captures']['value'], 'synced'>) {
   const database = await getOfflineDB()
   await database.put('pending_captures', { ...capture, synced: 0 })
   console.log('[Offline] Captura salva localmente:', capture.id)
@@ -146,7 +146,7 @@ export async function markCaptureSynced(id: string) {
 
 // ─── CACHE DE SPOTS ──────────────────────────────────────────
 
-export async function cacheSpots(spots: FishMapOfflineDB['spots_cache']['value'][]) {
+export async function cacheSpots(spots: FishgadaOfflineDB['spots_cache']['value'][]) {
   const database = await getOfflineDB()
   const tx = database.transaction('spots_cache', 'readwrite')
   await Promise.all([
@@ -155,7 +155,7 @@ export async function cacheSpots(spots: FishMapOfflineDB['spots_cache']['value']
   ])
 }
 
-export async function getCachedSpots(): Promise<FishMapOfflineDB['spots_cache']['value'][]> {
+export async function getCachedSpots(): Promise<FishgadaOfflineDB['spots_cache']['value'][]> {
   const database = await getOfflineDB()
   return database.getAll('spots_cache')
 }

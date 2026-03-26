@@ -104,8 +104,8 @@ export default function TrophyCardModal({ isOpen, onClose, spot, userId }: Troph
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: 'Meu Troféu no WikiFish',
-          text: `Confira minha captura em ${spot.title}! Registrado pelo @WikiFish`,
+          title: 'Meu Troféu no Fishgada',
+          text: `Confira minha captura em ${spot.title}! Registrado pelo @Fishgada`,
         })
       } else {
         downloadImage()
@@ -190,7 +190,7 @@ export default function TrophyCardModal({ isOpen, onClose, spot, userId }: Troph
               {/* Central Trophy Title */}
               <div className="mt-12 space-y-3 text-center">
                 <div className="inline-block px-3 py-1 bg-accent/20 border border-accent/20 rounded-full">
-                   <p className="text-[10px] text-accent font-black uppercase tracking-[0.4em]">Troféu WikiFish</p>
+                   <p className="text-[10px] text-accent font-black uppercase tracking-[0.4em]">Troféu Fishgada</p>
                 </div>
                 <h2 className="text-5xl font-black text-white uppercase tracking-tighter leading-[0.9] italic">
                   {capture?.species || 'Expedição'}

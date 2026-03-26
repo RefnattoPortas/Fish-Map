@@ -352,7 +352,7 @@ export default function ResortAdminPage() {
                          <TrendingUp size={16} className="text-accent" /> Total de Capturas
                       </h3>
                       <p className="text-7xl font-black text-white">{stats.total_captures}</p>
-                      <p className="text-sm text-gray-400 font-medium">Capturas registradas por pescadores neste local via FishMap.</p>
+                      <p className="text-sm text-gray-400 font-medium">Capturas registradas por pescadores neste local via Fishgada.</p>
                    </div>
 
                    {/* Card Espécies */}

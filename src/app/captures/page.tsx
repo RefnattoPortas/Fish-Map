@@ -9,7 +9,7 @@ export default function CapturesPage() {
       <div style={{ fontSize: 64 }}>🎣</div>
       <h1 style={{ fontSize: 28, fontWeight: 800 }}>Capturas da Comunidade</h1>
       <p style={{ color: 'var(--color-text-secondary)', maxWidth: 400 }}>
-        Feed de capturas públicas da comunidade WikiFish. Em breve!
+        Feed de capturas públicas da comunidade Fishgada. Em breve!
       </p>
       <a href="/" style={{ color: 'var(--color-accent-primary)', textDecoration: 'none', fontWeight: 600 }}>
         ← Voltar ao Mapa

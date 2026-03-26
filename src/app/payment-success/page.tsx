@@ -169,8 +169,10 @@ function PaymentSuccessContent() {
 
         <p className="text-lg text-gray-400 font-medium mb-12 max-w-md mx-auto leading-relaxed">
           Seu acesso <strong className="text-accent">Premium</strong> está 
-          oficialmente <strong className="text-white">liberado</strong>. 
-          Agora você domina as águas com inteligência de verdade. 🎣
+          oficialmente <strong className="text-white">liberado</strong>. <br />
+          <span className="text-cyan-400 font-black uppercase tracking-widest text-sm block mt-4">
+             Você agora faz parte da elite do Fishgada. Boas fisgadas!
+          </span>
         </p>
 
         {/* Benefits Cards */}

@@ -133,7 +133,7 @@ export default function FishingMap({
 
         // Atribuição personalizada discreta
         L.control.attribution({
-          prefix: '© Fish-Map | © CartoDB'
+          prefix: '© Fishgada | © CartoDB'
         }).addTo(mapInstance)
 
         // Evento de clique no mapa

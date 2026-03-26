@@ -93,7 +93,7 @@ export default function SettingsPage() {
             </div>
             <div>
               <h1 className="text-3xl font-black text-white tracking-tight uppercase italic">Configurações</h1>
-              <p className="text-gray-500 text-sm font-bold uppercase tracking-widest">Personalize sua experiência no WikiFish</p>
+              <p className="text-gray-500 text-sm font-bold uppercase tracking-widest">Personalize sua experiência no Fishgada</p>
             </div>
           </header>
 

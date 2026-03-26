@@ -156,7 +156,7 @@ export default function TournamentTicket({
                   )}
                 </button>
                 
-                <p className="mt-6 text-[8px] font-black text-dark/30 uppercase tracking-[0.3em]">FishMap Official</p>
+                <p className="mt-6 text-[8px] font-black text-dark/30 uppercase tracking-[0.3em]">Fishgada Official</p>
               </>
             )}
           </div>

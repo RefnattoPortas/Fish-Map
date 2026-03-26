@@ -163,7 +163,7 @@ export default function LeaderboardPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 shadow-xl shadow-rose-500/20 mb-2 animate-bounce-slow">
               <Trophy size={32} color="white" />
             </div>
-            <h1 className="text-4xl font-black text-white tracking-tight">Fish-Map Leaderboard</h1>
+            <h1 className="text-4xl font-black text-white tracking-tight">Fishgada Leaderboard</h1>
             <p className="text-gray-400 max-w-md mx-auto">
               Ranking de popularidade baseado no seu desempenho e engajamento da comunidade.
             </p>

@@ -11,20 +11,22 @@ interface PaywallModalProps {
 }
 
 // ======================================================
-// ESTRATÉGIA DE PRECIFICAÇÃO FISHMAP
+// ESTRATÉGIA DE PRECIFICAÇÃO FISHGADA (Rebranding + Trial)
 // ======================================================
 const PLANS = {
   pro: {
-    name: 'Fish Pro',
-    monthly: { id: 'price_PRO_MONTHLY', price: 19.90, label: 'R$ 19,90/mês', discount: undefined as string | undefined },
-    annual: { id: 'price_PRO_ANNUAL', price: 149.90, label: 'R$ 149,90/ano', discount: '40% OFF' as string | undefined },
+    name: 'Pescador Pro',
+    monthly: { id: 'price_PRO_MONTHLY', price: 15.00, label: 'R$ 15,00/mês', discount: undefined as string | undefined },
+    annual: { id: 'price_PRO_ANNUAL', price: 35.00, label: 'R$ 35,00/ano', discount: '80% OFF' as string | undefined },
     plan: 'pro',
+    badge: 'Melhor Valor'
   },
   partner: {
-    name: 'Fish Partner',
-    monthly: { id: 'price_PARTNER_MONTHLY', price: 99.00, label: 'R$ 99,00/mês', discount: undefined as string | undefined },
-    annual: { id: 'price_PARTNER_ANNUAL', price: 890.00, label: 'R$ 890,00/ano', discount: '2 meses Grátis' as string | undefined },
+    name: 'Pesqueiro Parceiro',
+    monthly: { id: 'price_PARTNER_MONTHLY', price: 50.00, label: 'R$ 50,00/mês', discount: undefined as string | undefined },
+    annual: { id: 'price_PARTNER_ANNUAL', price: 99.00, label: 'R$ 99,00/ano', discount: '6 meses Grátis' as string | undefined },
     plan: 'partner',
+    badge: 'Destaque'
   },
 }
 
@@ -41,7 +43,6 @@ export default function PaywallModal({ isOpen, onClose, featureName }: PaywallMo
       const supabase = getSupabaseClient()
       const { data } = await supabase.auth.getSession()
       
-      // Verificação segura da sessão
       const session = data?.session
       
       if (!session || typeof session === 'string') {
@@ -53,7 +54,6 @@ export default function PaywallModal({ isOpen, onClose, featureName }: PaywallMo
       const planData = PLANS[selectedPlan]
       const cycleData = billingCycle === 'monthly' ? planData.monthly : planData.annual
 
-      // Chamar a Edge Function
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-checkout-session`,
         {
@@ -91,15 +91,22 @@ export default function PaywallModal({ isOpen, onClose, featureName }: PaywallMo
     <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 md:p-6 bg-black/95 backdrop-blur-xl animate-in fade-in duration-300">
       <div className="relative w-full max-w-lg glass-elevated border-2 border-accent/30 rounded-[40px] md:rounded-[60px] shadow-[0_0_120px_rgba(0,212,170,0.15)] overflow-hidden flex flex-col max-h-[90vh]">
         
+        {/* Banner de Presente de Lançamento */}
+        <div className="bg-gradient-to-r from-cyan-600 to-blue-700 py-3 text-center animate-pulse">
+           <p className="text-[10px] md:text-xs font-black text-white uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+              🎁 PRESENTE DE LANÇAMENTO: Ganhe 3 meses de acesso TOTAL GRÁTIS!
+           </p>
+        </div>
+
         <button 
           onClick={onClose}
-          className="absolute top-6 right-6 md:top-10 md:right-10 text-gray-500 hover:text-white transition-colors z-30 bg-[#0a0f1a]/50 p-1 rounded-full border border-white/5"
+          className="absolute top-14 right-6 md:top-18 md:right-10 text-gray-500 hover:text-white transition-colors z-30 bg-[#0a0f1a]/50 p-1 rounded-full border border-white/5"
         >
           <X size={24} />
         </button>
 
         {/* Scrollable Content */}
-        <div className="p-8 md:p-12 text-center space-y-8 md:space-y-10 overflow-y-auto custom-scrollbar overflow-x-hidden">
+        <div className="p-8 md:p-12 pt-4 md:pt-6 text-center space-y-8 md:space-y-10 overflow-y-auto custom-scrollbar overflow-x-hidden">
           <div className="flex flex-col items-center gap-6">
             <div className="relative">
                <div className="w-24 h-24 rounded-[40%] bg-accent flex items-center justify-center text-dark shadow-2xl shadow-accent/40 animate-pulse">
@@ -112,10 +119,10 @@ export default function PaywallModal({ isOpen, onClose, featureName }: PaywallMo
             
             <div className="space-y-2">
                <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white leading-none">
-                  Alcance o <span className="text-accent underline decoration-4 underline-offset-4">Topo</span>
+                  A Elite do <span className="text-accent underline decoration-4 underline-offset-4">Fishgada</span>
                </h2>
                <p className="text-gray-400 font-medium">
-                  Domine as águas com inteligência e ferramentas exclusivas.
+                  Domine as águas com a maior plataforma de pesca do Brasil.
                </p>
             </div>
           </div>
@@ -134,7 +141,7 @@ export default function PaywallModal({ isOpen, onClose, featureName }: PaywallMo
                  className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${billingCycle === 'annual' ? 'bg-accent text-dark shadow-xl' : 'text-gray-500'}`}
                >
                  Anual
-                 <div className="absolute -top-3 -right-2 px-2 py-0.5 bg-indigo-500 text-white text-[8px] rounded-full ring-2 ring-[#0a0f1a]">Economize</div>
+                 <div className="absolute -top-3 -right-2 px-2 py-0.5 bg-indigo-500 text-white text-[8px] rounded-full ring-2 ring-[#0a0f1a]">Melhor Escolha</div>
                </button>
             </div>
           </div>
