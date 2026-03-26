@@ -208,7 +208,7 @@ export default function TournamentsPage() {
                           </button>
                         )}
                         
-                        <p className="mt-6 text-[9px] font-bold text-dark/40 uppercase tracking-widest">WIKIFISH OFFICIAL EVENT</p>
+                        <p className="mt-6 text-[9px] font-bold text-dark/40 uppercase tracking-widest">FISHGADA OFFICIAL EVENT</p>
                      </div>
                   </div>
                 </div>

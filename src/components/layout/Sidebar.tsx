@@ -168,7 +168,7 @@ export default function Sidebar({
       <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden h-full">
         {/* Logo */}
         <div className="flex items-center gap-3 p-3 mb-2 mt-1" style={{ minHeight: 60 }}>
-          <Link href="/" className="flex-shrink-0 flex items-center justify-center rounded-xl overflow-hidden cursor-pointer"
+          <Link href="/" className="flex-shrink-0 flex items-center justify-center rounded-xl overflow-hidden cursor-pointer mix-blend-screen"
             style={{
               width: expanded ? 180 : 40, 
               height: 40,

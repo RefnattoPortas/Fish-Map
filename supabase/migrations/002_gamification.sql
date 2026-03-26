@@ -1,5 +1,5 @@
 -- ============================================================
--- WikiFish Gamification Migration v1.1
+-- Fishgada Gamification Migration v1.1
 -- Sistema de XP Automatizado e Medalhas
 -- ============================================================
 

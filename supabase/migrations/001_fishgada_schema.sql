@@ -1,5 +1,5 @@
 -- ============================================================
--- WikiFish Database Migration v1.0
+-- Fishgada Database Migration v1.0
 -- Plataforma de Pesca Esportiva com PostGIS + RLS + Gamificação
 -- ============================================================
 

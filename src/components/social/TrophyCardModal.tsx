@@ -99,7 +99,7 @@ export default function TrophyCardModal({ isOpen, onClose, spot, userId }: Troph
     try {
       const response = await fetch(imageGenerated)
       const blob = await response.blob()
-      const file = new File([blob], `trofeu-wikifish-${new Date().getTime()}.png`, { type: 'image/png' })
+      const file = new File([blob], `trofeu-fishgada-${new Date().getTime()}.png`, { type: 'image/png' })
 
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
@@ -119,7 +119,7 @@ export default function TrophyCardModal({ isOpen, onClose, spot, userId }: Troph
   const downloadImage = () => {
     if (!imageGenerated) return
     const link = document.createElement('a')
-    link.download = `trofeu-wikifish-${new Date().getTime()}.png`
+    link.download = `trofeu-fishgada-${new Date().getTime()}.png`
     link.href = imageGenerated
     link.click()
   }
@@ -238,7 +238,7 @@ export default function TrophyCardModal({ isOpen, onClose, spot, userId }: Troph
                        <div className="w-4 h-4 rounded bg-white flex items-center justify-center">
                           <Fish size={10} color="#000" />
                        </div>
-                       <span className="text-[8px] font-black text-white tracking-widest">WIKIFISH</span>
+                       <span className="text-[8px] font-black text-white tracking-widest">FISHGADA</span>
                     </div>
                  </div>
               </div>

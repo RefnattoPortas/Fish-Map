@@ -58,8 +58,8 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-md z-10 animate-in fade-in zoom-in duration-500">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-40 h-40 mb-2">
-            <img src="/images/logo.png" alt="Fishgada Logo" className="w-full h-full object-contain filter drop-shadow(0 0 20px rgba(0,255,255,0.2))" />
+          <div className="inline-flex items-center justify-center w-56 h-56 mb-[-1rem]">
+            <img src="/images/logo.png" alt="Fishgada Logo" className="w-full h-full object-contain mix-blend-screen filter drop-shadow(0 0 20px rgba(0,255,255,0.2))" />
           </div>
           <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">
             A elite da pesca esportiva

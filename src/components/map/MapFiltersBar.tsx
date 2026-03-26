@@ -60,7 +60,7 @@ export default function MapFiltersBar({ filters, onChange, spotCount, user, them
 
   useEffect(() => {
     setIsMounted(true)
-    const saved = localStorage.getItem('wikifish_mute_highlights')
+    const saved = localStorage.getItem('fishgada_mute_highlights')
     if (saved === 'true') setMuted(true)
   }, [])
 
@@ -76,7 +76,7 @@ export default function MapFiltersBar({ filters, onChange, spotCount, user, them
   const toggleMute = () => {
     const next = !muted
     setMuted(next)
-    localStorage.setItem('wikifish_mute_highlights', String(next))
+    localStorage.setItem('fishgada_mute_highlights', String(next))
   }
 
 

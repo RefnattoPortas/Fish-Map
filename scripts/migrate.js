@@ -1,5 +1,5 @@
 /**
- * Script de migração WikiFish → Supabase
+ * Script de migração Fishgada → Supabase
  * Aplica o schema SQL usando a Management API do Supabase
  * 
  * Uso: node scripts/migrate.js
@@ -17,13 +17,13 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 const SUPABASE_URL = `https://${PROJECT_REF}.supabase.co`
 
 // Lê o SQL de migração
-const sqlFile = path.join(__dirname, '..', 'supabase', 'migrations', '001_wikifish_schema.sql')
+const sqlFile = path.join(__dirname, '..', 'supabase', 'migrations', '001_fishgada_schema.sql')
 const sql = fs.readFileSync(sqlFile, 'utf8')
 
 // Divide em statements individuais para execução mais confiável
 // Mas vamos enviar tudo de uma vez via rpc
 async function runMigration() {
-  console.log('🎣 WikiFish — Aplicando migração no Supabase...')
+  console.log('🎣 Fishgada — Aplicando migração no Supabase...')
   console.log(`📡 Projeto: ${PROJECT_REF}`)
   console.log(`🔗 URL: ${SUPABASE_URL}`)
   console.log('')

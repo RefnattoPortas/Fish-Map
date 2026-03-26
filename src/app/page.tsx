@@ -92,7 +92,7 @@ function HomeContent() {
 
   // Ler tema local do mapa
   useEffect(() => {
-    const saved = localStorage.getItem('wikifish_map_theme') as 'dark' | 'light'
+    const saved = localStorage.getItem('fishgada_map_theme') as 'dark' | 'light'
     if (saved) setMapTheme(saved)
   }, [])
 
@@ -588,7 +588,7 @@ function HomeContent() {
 export default function HomePage() {
   return (
     <Suspense fallback={<div className="h-screen w-screen bg-[#0a0f1a] flex flex-col items-center justify-center text-white">
-      <div className="w-32 h-32 mb-4 animate-pulse">
+      <div className="w-32 h-32 mb-4 animate-pulse mix-blend-screen">
         <img src="/images/logo.png" alt="Fishgada" className="w-full h-full object-contain" />
       </div>
       <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden">

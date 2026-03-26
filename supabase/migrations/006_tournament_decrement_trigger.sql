@@ -1,5 +1,5 @@
 -- ============================================================
--- WikiFish Tournaments Decrement Trigger
+-- Fishgada Tournaments Decrement Trigger
 -- ============================================================
 
 -- Function to decrement available spots (max_participants) on new tournament registration

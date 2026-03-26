@@ -166,7 +166,7 @@ BEGIN
                 gen_random_uuid(),
                 v_user_id,
                 'Pesqueiro do Usuário ' || v_i,
-                'Um dos melhores pesqueiros parceiros do FishMap.',
+                'Um dos melhores pesqueiros parceiros do Fishgada.',
                 'public',
                 'lake',
                 ST_SetSRID(ST_MakePoint(-47 + (random() * 4), -23 + (random() * 4)), 4326)::geography,

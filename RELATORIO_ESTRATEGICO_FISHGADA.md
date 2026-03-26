@@ -1,11 +1,11 @@
-# 🎣 RELATÓRIO ESTRATÉGICO: FISHMAP v1.5
+# 🎣 RELATÓRIO ESTRATÉGICO: FISHGADA v1.5
 **Data de Emissão:** 20 de Março de 2026  
 **Status do Ecossistema:** Operacional (Next.js + Supabase)
 
 ---
 
-## 1. O QUE É O FISHMAP?
-O **FishMap** é uma plataforma de geolocalização e inteligência de dados voltada para a **Pesca Esportiva**. Ele conecta dois mundos: o pescador amador/profissional que busca o melhor lugar para pescar, e o empresário de pesqueiros que precisa de tráfego qualificado e ferramentas de marketing.
+## 1. O QUE É O FISHGADA?
+O **Fishgada** é uma plataforma de geolocalização e inteligência de dados voltada para a **Pesca Esportiva**. Ele conecta dois mundos: o pescador amador/profissional que busca o melhor lugar para pescar, e o empresário de pesqueiros que precisa de tráfego qualificado e ferramentas de marketing.
 
 **Diferencial Tecnológico:** O sistema utiliza lógica de **Viewport Filtering**, o que significa que ele se comporta de forma inteligente: conforme o usuário navega no mapa, a contagem de peixes e os alertas de "Peixe Batendo" se ajustam em tempo real apenas para a região visível.
 
@@ -42,7 +42,7 @@ O usuário **Free** tem o mapa, mas o usuário **Pro** tem o **Radar**.
 ---
 
 ## 4. O ECOSSISTEMA DO PESQUEIRO PARCEIRO
-O FishMap transforma o pesqueiro de um "ponto no Google Maps" em um **Parceiro Institucional**.
+O **Fishgada** transforma o pesqueiro de um "ponto no Google Maps" em um **Parceiro Institucional**.
 
 ### Por que ser um Pesqueiro Parceiro?
 1.  **Destaque no Mapa (Pin Roxo):** Diferenciação visual imediata dos seus concorrentes.
@@ -69,4 +69,4 @@ O FishMap transforma o pesqueiro de um "ponto no Google Maps" em um **Parceiro I
 *   **Notificações de Gestão**: Silenciador de alertas integrado para o usuário final.
 
 ---
-**FishMap - Pesca Inteligente, Tecnologia de Ponta.** 🎣🚀
+**Fishgada - Pesca Inteligente, Tecnologia de Ponta.** 🎣🚀

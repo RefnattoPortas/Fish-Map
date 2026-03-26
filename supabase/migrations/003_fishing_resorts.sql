@@ -1,5 +1,5 @@
 -- ============================================================
--- WikiFish Fishing Resorts Extension v1.2
+-- Fishgada Fishing Resorts Extension v1.2
 -- Suporte para estabelecimentos comerciais (Pesqueiros)
 -- ============================================================
 

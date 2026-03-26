@@ -80,7 +80,7 @@ let db: IDBPDatabase<FishgadaOfflineDB> | null = null
 
 export async function getOfflineDB(): Promise<IDBPDatabase<FishgadaOfflineDB>> {
   if (!db) {
-    db = await openDB<FishgadaOfflineDB>('wikifish-offline', 1, {
+    db = await openDB<FishgadaOfflineDB>('fishgada-offline', 1, {
       upgrade(database) {
         // Store de spots pendentes
         const spotsStore = database.createObjectStore('pending_spots', {

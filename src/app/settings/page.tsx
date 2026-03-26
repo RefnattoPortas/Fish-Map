@@ -21,7 +21,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchProfile()
-    const savedMapTheme = localStorage.getItem('wikifish_map_theme') as 'dark' | 'light'
+    const savedMapTheme = localStorage.getItem('fishgada_map_theme') as 'dark' | 'light'
     if (savedMapTheme) setMapTheme(savedMapTheme)
   }, [])
 
@@ -256,7 +256,7 @@ export default function SettingsPage() {
                         <button 
                           onClick={() => {
                             setMapTheme('light')
-                            localStorage.setItem('wikifish_map_theme', 'light')
+                            localStorage.setItem('fishgada_map_theme', 'light')
                           }}
                           className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${
                             mapTheme === 'light' 
@@ -275,7 +275,7 @@ export default function SettingsPage() {
                         <button 
                           onClick={() => {
                             setMapTheme('dark')
-                            localStorage.setItem('wikifish_map_theme', 'dark')
+                            localStorage.setItem('fishgada_map_theme', 'dark')
                           }}
                           className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${
                             mapTheme === 'dark' 

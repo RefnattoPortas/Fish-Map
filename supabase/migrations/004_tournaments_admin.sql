@@ -1,5 +1,5 @@
 -- ============================================================
--- WikiFish Tournaments & Resort Admin Extension v1.3
+-- Fishgada Tournaments & Resort Admin Extension v1.3
 -- ============================================================
 
 -- 1. ADICIONAR CAMPOS À fishing_resorts

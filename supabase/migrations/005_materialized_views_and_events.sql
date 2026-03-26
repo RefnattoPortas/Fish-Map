@@ -1,5 +1,5 @@
 -- ============================================================
--- WikiFish Optimization & Events v1.4
+-- Fishgada Optimization & Events v1.4
 -- ============================================================
 
 -- 1. NOTIFICATIONS TABLE
