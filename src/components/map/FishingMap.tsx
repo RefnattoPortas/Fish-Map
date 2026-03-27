@@ -458,13 +458,6 @@ export default function FishingMap({
         >
           {/* Container Coluna: Legenda em baixo, Info acima */}
           <div className="flex flex-col gap-3">
-             {/* Info de Pontos (acima da legenda) */}
-             <div className="glass px-3 py-1.5 rounded-xl border border-white/5 shadow-xl w-fit">
-                <span className="text-[10px] text-accent font-black uppercase tracking-wider">
-                  🎣 {spots.length} pontos
-                </span>
-             </div>
-
              {/* Legenda */}
              <div className="glass p-2.5 rounded-2xl border border-white/5 shadow-2xl w-[120px]">
                 <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">Legenda</p>

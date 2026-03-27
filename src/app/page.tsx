@@ -374,7 +374,7 @@ function HomeContent() {
 
         {/* Banner de Presente de Lançamento (Topo do Mapa) */}
         {!user?.profile?.subscription_tier && (
-          <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[1000] flex animate-in slide-in-from-top duration-500">
+          <div className="absolute top-[110px] left-1/2 -translate-x-1/2 z-[1000] flex animate-in slide-in-from-top duration-500">
             <div className="glass px-6 py-3 rounded-2xl border border-cyan-500/50 shadow-[0_0_30px_rgba(0,255,255,0.2)] flex items-center gap-3 whitespace-nowrap overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
               <span className="text-xl">🎁</span>

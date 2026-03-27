@@ -27,23 +27,66 @@ export default function SpeciesCatalogPage() {
       
       if (!session) return
 
-      // Buscar da View unificando catálogo e capturas do usuário logado
-      const { data, error } = await supabase
-        .from('user_species_album')
+      // 1. Buscar TODAS as espécies ativas do catálogo
+      const { data: speciesData, error: speciesError } = await supabase
+        .from('species')
         .select('*')
-        .eq('user_id', session.user.id)
+        .eq('is_active', true)
         
-      if (error && error.code !== '42P01') {
-        console.error('Erro ao buscar catálogo de espécies:', error)
-      } else if (data) {
-        setSpecies(data)
-      } else if (error?.code === '42P01') {
-        // Tabela não existe ainda
-        console.warn('A View user_species_album não foi encontrada. Migration pendente.')
+      if (speciesError) {
+        if (speciesError.code !== '42P01') console.error('Erro ao buscar species:', speciesError)
+        return
       }
 
+      // 2. Buscar as capturas do usuário logado
+      const { data: capturesData, error: capturesError } = await supabase
+        .from('captures')
+        .select('id, species, length_cm, weight_kg, captured_at')
+        .eq('user_id', session.user.id)
+
+      if (capturesError) {
+        console.error('Erro ao buscar capturas:', capturesError)
+      }
+
+      const userCaptures = capturesData || []
+
+      // 3. Mesclar (Join) no frontend
+      const mergedAlbum: SpeciesAlbum[] = (speciesData || []).map((s: any) => {
+        // Encontrar todas as capturas desta espécie pelo nome
+        const myCatches = userCaptures.filter((c: any) => 
+          c.species?.trim().toLowerCase() === s.nome_comum?.trim().toLowerCase()
+        )
+
+        return {
+          species_id: s.id,
+          nome_comum: s.nome_comum,
+          nome_cientifico: s.nome_cientifico,
+          habitat: s.habitat,
+          tamanho_recorde_cm: s.tamanho_recorde_cm,
+          peso_recorde_kg: s.peso_recorde_kg,
+          isca_favorita: s.isca_favorita,
+          dica_pro: s.dica_pro,
+          tamanho_minimo_cm: s.tamanho_minimo_cm,
+          imagem_url: s.imagem_url,
+          user_id: session.user.id,
+          total_capturas: myCatches.length,
+          maior_tamanho_capturado_cm: myCatches.length > 0 ? Math.max(...myCatches.map((c: any) => c.length_cm || 0)) : null,
+          maior_peso_capturado_kg: myCatches.length > 0 ? Math.max(...myCatches.map((c: any) => c.weight_kg || 0)) : null,
+          ultima_captura: myCatches.length > 0 ? myCatches.reduce((latest: string, c: any) => c.captured_at > latest ? c.captured_at : latest, myCatches[0].captured_at) : null
+        }
+      })
+
+      // Ordenar: Primeiro os capturados, depois os não capturados (em ordem alfabética)
+      const sortedAlbum = mergedAlbum.sort((a, b) => {
+        if (a.total_capturas > 0 && b.total_capturas === 0) return -1;
+        if (a.total_capturas === 0 && b.total_capturas > 0) return 1;
+        return a.nome_comum.localeCompare(b.nome_comum);
+      });
+
+      setSpecies(sortedAlbum)
+
     } catch (e) {
-      console.error(e)
+      console.error('Erro no catálogo:', e)
     } finally {
       setLoading(false)
     }
