@@ -26,7 +26,7 @@ export default function ResortAdminPage() {
   const [newTournament, setNewTournament] = useState({
     title: '',
     description: '',
-    start_at: '',
+    event_date: '',
     entry_fee: 0,
     prize_pool: '',
     max_participants: 50
@@ -108,6 +108,21 @@ export default function ResortAdminPage() {
       fetchTournaments(resort.id),
       fetchResortStats(resort.spot_id)
     ])
+    
+    // Lógica de expiração de 3 horas para o Highlight (Ação)
+    if (resort.active_highlight && resort.updated_at) {
+      const lastUpdate = new Date(resort.updated_at).getTime()
+      const now = new Date().getTime()
+      const threeHours = 3 * 60 * 60 * 1000
+      
+      if (now - lastUpdate > threeHours) {
+        // Limpar automaticamente se expirado
+        console.log('Highlight expirado, limpando...')
+        await supabase.from('fishing_resorts').update({ active_highlight: '' }).eq('id', resort.id)
+        setSelectedResort({ ...resort, active_highlight: '' })
+      }
+    }
+    
     setLoading(false)
   }
 
@@ -116,14 +131,14 @@ export default function ResortAdminPage() {
       .from('tournaments')
       .select(`
         *,
-        tournament_inscriptions(
+        tournament_participants(
           id,
-          created_at,
+          registered_at,
           profiles(display_name, avatar_url, level)
         )
       `)
       .eq('resort_id', resortId)
-      .order('start_at', { ascending: true })
+      .order('event_date', { ascending: true })
     
     setTournaments(data || [])
   }
@@ -182,7 +197,7 @@ export default function ResortAdminPage() {
   }
 
   const handleCreateTournament = async () => {
-    if (!selectedResort || !newTournament.title || !newTournament.start_at) return
+    if (!selectedResort || !newTournament.title || !newTournament.event_date) return
     setSaving(true)
     const { error } = await supabase
       .from('tournaments')
@@ -200,7 +215,7 @@ export default function ResortAdminPage() {
        setNewTournament({
          title: '',
          description: '',
-         start_at: '',
+         event_date: '',
          entry_fee: 0,
          prize_pool: '',
          max_participants: 50
@@ -228,7 +243,7 @@ export default function ResortAdminPage() {
         Detectamos que seu perfil não é proprietário de um Pesqueiro Parceiro. Se você possui um estabelecimento, cadastre-o primeiro no mapa ou entre em contato com o suporte B2B.
       </p>
       <button onClick={() => router.push('/')} className="btn-primary mt-12 px-12 py-4 text-xs font-black uppercase tracking-widest gap-2">
-         <ArrowRightIcon size={16} /> Voltar ao Mapa
+         <ArrowRight size={16} /> Voltar ao Mapa
       </button>
     </div>
   )
@@ -237,16 +252,65 @@ export default function ResortAdminPage() {
     <div className="flex w-screen h-screen overflow-hidden bg-[#0a0f1a]">
       <Sidebar />
       
-      {/* Mini Sidebar de Navegação Admin */}
-      <aside className="w-80 border-r border-white/5 bg-white/[0.01] flex flex-col pt-12">
+      {/* Mobile Tab Navigation */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-[1000] bg-[#0a0f1a]/90 backdrop-blur-xl border-b border-white/10 flex flex-col pt-4 pb-2">
+        <div className="pl-16 pr-4 flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-dark">
+              <Warehouse size={16} />
+            </div>
+            <h2 className="font-black text-sm tracking-tight leading-none text-white uppercase truncate max-w-[150px]">
+              {selectedResort?.spots.title}
+            </h2>
+          </div>
+          {resorts.length > 1 && (
+            <select 
+              value={selectedResort?.id} 
+              onChange={(e) => {
+                const r = resorts.find(res => res.id === e.target.value)
+                if (r) { setSelectedResort(r); loadDashboardData(r); }
+              }}
+              className="bg-white/5 border border-white/10 rounded-lg py-1 px-2 text-[10px] font-black text-accent outline-none"
+            >
+              {resorts.map(r => <option key={r.id} value={r.id} className="text-black">{r.spots.title}</option>)}
+            </select>
+          )}
+        </div>
+        
+        <div className="flex overflow-x-auto scrollbar-none px-4 pb-2 gap-2">
+          {[
+            { id: 'stats', label: 'Estatísticas', icon: BarChart3 },
+            { id: 'profile', label: 'Perfil', icon: Settings },
+            { id: 'highlight', label: 'Ação', icon: Flame },
+            { id: 'news', label: 'Mural', icon: Megaphone },
+            { id: 'tournaments', label: 'Torneios', icon: Trophy },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
+                activeTab === tab.id 
+                  ? 'bg-accent text-dark border-accent shadow-lg shadow-accent/20' 
+                  : 'bg-white/5 text-gray-400 border-white/5'
+              }`}
+            >
+              <tab.icon size={14} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Mini Sidebar de Navegação Admin (Desktop Only) */}
+      <aside className="hidden md:flex w-80 border-r border-white/5 bg-white/[0.01] flex-col pt-12">
         <div className="px-8 mb-12">
            <div className="flex items-center gap-3 mb-8">
               <div className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center text-dark shadow-lg shadow-accent/20">
                 <Warehouse size={24} />
               </div>
               <div>
-                <h2 className="font-black text-lg tracking-tight leading-none mb-1">DASHBOARD</h2>
-                <p className="text-[10px] text-accent font-bold uppercase tracking-widest">{selectedResort?.spots.title}</p>
+                <h2 className="font-black text-lg tracking-tight leading-none mb-1 text-white">DASHBOARD</h2>
+                <p className="text-[10px] text-accent font-bold uppercase tracking-widest leading-none truncate max-w-[140px]">{selectedResort?.spots.title}</p>
               </div>
            </div>
 
@@ -294,7 +358,7 @@ export default function ResortAdminPage() {
       </aside>
 
       {/* Main Panel Content */}
-      <main className="flex-1 overflow-y-auto p-8 md:p-16 custom-scrollbar pb-32">
+      <main className="flex-1 overflow-y-auto pt-24 md:pt-16 p-6 md:p-16 custom-scrollbar pb-32">
         <div className="max-w-5xl mx-auto fade-in">
           
           {/* FLUXO DE PUBLICAÇÃO (BANNER SE INATIVO) */}
@@ -337,7 +401,7 @@ export default function ResortAdminPage() {
              <div className="space-y-12">
                 <header>
                    <p className="text-accent font-black text-[10px] uppercase tracking-[0.3em] mb-4">Relatório de Performance</p>
-                   <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
+                   <h1 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
                       Insights <span className="text-gray-700">&</span> Métricas
                    </h1>
                 </header>
@@ -393,7 +457,7 @@ export default function ResortAdminPage() {
              <div className="space-y-12">
                 <header>
                    <p className="text-accent font-black text-[10px] uppercase tracking-[0.3em] mb-4">Informações da Vitrine</p>
-                   <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
+                   <h1 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
                       Infra <span className="text-gray-700">&</span> Servitium
                    </h1>
                 </header>
@@ -446,7 +510,7 @@ export default function ResortAdminPage() {
 
                    <div className="glass p-10 rounded-[40px] border border-white/5 space-y-6">
                       <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4 block">Comodidades Disponíveis</label>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-3 md:gap-4 place-items-center">
                          {[
                            { key: 'restaurante', label: 'Restaurante', icon: Utensils },
                            { key: 'banheiros', label: 'Banheiros', icon: Warehouse },
@@ -464,12 +528,12 @@ export default function ResortAdminPage() {
                                  const newInfra = { ...infra, [item.key]: !active }
                                  setSelectedResort({ ...selectedResort, infrastructure: newInfra })
                                }}
-                               className={`p-5 rounded-2xl border flex items-center gap-3 transition-all ${
+                               className={`w-full p-4 rounded-2xl border flex flex-col items-center justify-center gap-3 transition-all ${
                                  active ? 'border-accent bg-accent/5' : 'border-white/5 opacity-30 grayscale hover:opacity-50'
                                }`}
                              >
                                <item.icon size={18} className={active ? 'text-accent' : ''} />
-                               <span className="text-[11px] font-black uppercase tracking-wider">{item.label}</span>
+                               <span className="text-[11px] font-black uppercase tracking-wider text-center">{item.label}</span>
                              </button>
                            )
                          })}
@@ -562,7 +626,7 @@ export default function ResortAdminPage() {
              <div className="space-y-12">
                 <header>
                    <p className="text-accent font-black text-[10px] uppercase tracking-[0.3em] mb-4">Ação em Tempo Real</p>
-                   <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
+                   <h1 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
                       Focus <span className="text-gray-700">&</span> Fire
                    </h1>
                 </header>
@@ -585,7 +649,7 @@ export default function ResortAdminPage() {
                    <div className="space-y-4 relative z-10">
                       <label className="text-[10px] font-black text-accent uppercase tracking-widest block pl-2">Sua Mensagem de Gancho</label>
                       <input 
-                        className="w-full bg-white/5 border border-white/10 rounded-3xl py-10 px-10 text-4xl font-black text-white placeholder:text-white/10 outline-none focus:border-accent transition-all italic tracking-tighter"
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl md:rounded-3xl py-6 md:py-10 px-6 md:px-10 text-2xl md:text-4xl font-black text-white placeholder:text-white/10 outline-none focus:border-accent transition-all italic tracking-tighter"
                         placeholder="EX: A PIRARARA ATIVOU!"
                         value={selectedResort?.active_highlight || ''}
                         onChange={e => setSelectedResort({...selectedResort, active_highlight: e.target.value})}
@@ -626,7 +690,7 @@ export default function ResortAdminPage() {
              <div className="space-y-12">
                 <header>
                    <p className="text-amber-500 font-black text-[10px] uppercase tracking-[0.3em] mb-4">Comunicação Direta</p>
-                   <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
+                   <h1 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
                       Board <span className="text-gray-700">&</span> News
                    </h1>
                 </header>
@@ -668,115 +732,115 @@ export default function ResortAdminPage() {
           {/* TAB: TOURNAMENTS */}
           {activeTab === 'tournaments' && (
              <div className="space-y-12">
-                <header className="flex items-end justify-between">
+                <header className="flex flex-col items-start gap-8">
                    <div>
                       <p className="text-accent font-black text-[10px] uppercase tracking-[0.3em] mb-4">Gerenciador de Ingressos</p>
-                      <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
-                         Events <span className="text-gray-700">&</span> Arena
-                      </h1>
-                   </div>
-                   <button 
-                     onClick={() => setShowNewTournament(true)}
-                     className="btn-primary px-10 py-5 text-xs font-black uppercase tracking-widest gap-2 shadow-xl shadow-accent/20"
-                   >
-                     <Plus size={18} /> Novo Torneio
-                   </button>
-                </header>
+                       <h1 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
+                          Events <span className="text-gray-700">&</span> Arena
+                       </h1>
+                    </div>
+                    <button 
+                      onClick={() => setShowNewTournament(true)}
+                      className="btn-primary w-full md:w-auto px-10 py-5 text-xs font-black uppercase tracking-widest gap-2 shadow-xl shadow-accent/20"
+                    >
+                      <Plus size={18} /> Novo Torneio
+                    </button>
+                 </header>
 
-                <div className="grid grid-cols-1 gap-12">
-                   {tournaments.length > 0 ? tournaments.map(t => (
-                      <div key={t.id} className="space-y-6">
-                         {/* Card do Torneio */}
-                         <div className="glass p-10 rounded-[40px] border border-accent/20 bg-gradient-to-br from-accent/5 to-transparent flex flex-col md:flex-row gap-10">
-                            <div className="flex-1 space-y-6">
-                               <div className="flex items-center gap-3">
-                                  <span className={`px-4 py-1 rounded-full text-[9px] font-black tracking-widest uppercase ${
-                                    t.status === 'open' ? 'bg-accent text-dark' : 'bg-white/5 text-gray-500'
-                                  }`}>
-                                     {t.status === 'open' ? 'Ativo' : t.status}
-                                  </span>
-                                  <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                     Criado em {new Date(t.created_at).toLocaleDateString()}
-                                  </span>
-                               </div>
-                               <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">{t.title}</h2>
-                               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                  <div>
-                                     <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Engajamento</p>
-                                     <p className="text-xl font-black text-white">{(t.tournament_participants || []).length} <span className="text-xs text-gray-600">inscritos</span></p>
-                                  </div>
-                                  <div>
-                                     <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Data</p>
-                                     <p className="text-sm font-bold text-white">{new Date(t.event_date).toLocaleDateString()}</p>
-                                  </div>
-                                  <div>
-                                     <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Preço Ticket</p>
-                                     <p className="text-sm font-bold text-accent">R$ {t.entry_fee}</p>
-                                  </div>
-                                  <div>
-                                     <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Faturamento Est.</p>
-                                     <p className="text-sm font-bold text-white">R$ {t.entry_fee * (t.tournament_participants || []).length}</p>
-                                  </div>
-                               </div>
-                            </div>
-                            
-                            <div className="md:w-px bg-white/5" />
+                 <div className="grid grid-cols-1 gap-12">
+                    {tournaments.length > 0 ? tournaments.map(t => (
+                       <div key={t.id} className="space-y-6">
+                          {/* Card do Torneio */}
+                          <div className="glass p-10 rounded-[40px] border border-accent/20 bg-gradient-to-br from-accent/5 to-transparent flex flex-col md:flex-row gap-10">
+                             <div className="flex-1 space-y-6">
+                                <div className="flex items-center gap-3">
+                                   <span className={`px-4 py-1 rounded-full text-[9px] font-black tracking-widest uppercase ${
+                                     t.status === 'open' ? 'bg-accent text-dark' : 'bg-white/5 text-gray-500'
+                                   }`}>
+                                      {t.status === 'open' ? 'Ativo' : t.status}
+                                   </span>
+                                   <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                      Criado em {new Date(t.created_at).toLocaleDateString()}
+                                   </span>
+                                </div>
+                                <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">{t.title}</h2>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                   <div>
+                                      <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Engajamento</p>
+                                      <p className="text-xl font-black text-white">{(t.tournament_participants || []).length} <span className="text-xs text-gray-600">inscritos</span></p>
+                                   </div>
+                                   <div>
+                                      <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Data</p>
+                                      <p className="text-sm font-bold text-white">{new Date(t.event_date).toLocaleDateString()}</p>
+                                   </div>
+                                   <div>
+                                      <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Preço Ticket</p>
+                                      <p className="text-sm font-bold text-accent">R$ {t.entry_fee}</p>
+                                   </div>
+                                   <div>
+                                      <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Faturamento Est.</p>
+                                      <p className="text-sm font-bold text-white">R$ {t.entry_fee * (t.tournament_participants || []).length}</p>
+                                   </div>
+                                </div>
+                             </div>
+                             
+                             <div className="md:w-px bg-white/5" />
 
-                            <div className="md:w-48 flex flex-col gap-3 justify-center">
-                               <button className="w-full btn-secondary py-3 text-[10px] font-black uppercase tracking-widest gap-2">
-                                  <Edit3 size={14} /> Editar Info
-                               </button>
-                               <button className="w-full bg-red-500/10 border border-red-500/20 text-red-500 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2">
-                                  <Trash2 size={14} /> Encerrar
-                               </button>
-                            </div>
-                         </div>
+                             <div className="md:w-48 flex flex-col gap-3 justify-center">
+                                <button className="w-full btn-secondary py-3 text-[10px] font-black uppercase tracking-widest gap-2">
+                                   <Edit3 size={14} /> Editar Info
+                                </button>
+                                <button className="w-full bg-red-500/10 border border-red-500/20 text-red-500 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2">
+                                   <Trash2 size={14} /> Encerrar
+                                </button>
+                             </div>
+                          </div>
 
-                         {/* Lista de Inscritos */}
-                         <div className="pl-10 space-y-4">
-                            <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em] flex items-center gap-2">
-                               <Users size={14} /> Lista de Pescadores Inscritos
-                            </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                               {(t.tournament_participants || []).length > 0 ? t.tournament_participants.map((p: any) => (
-                                  <div key={p.id} className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl flex items-center gap-4 group hover:bg-white/[0.04] transition-all">
-                                     <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 flex-shrink-0">
-                                        {p.profiles?.avatar_url ? (
-                                           <img src={p.profiles.avatar_url} className="w-full h-full object-cover" />
-                                        ) : (
-                                          <div className="w-full h-full bg-slate-800 flex items-center justify-center text-gray-500">
-                                            <User size={18} />
-                                          </div>
-                                        )}
-                                     </div>
-                                     <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-white text-sm truncate uppercase tracking-tight">{p.profiles?.display_name || 'Participante'}</p>
-                                        <div className="flex items-center gap-2">
-                                           <span className="text-[9px] text-accent font-black">LVL {p.profiles?.level || 1}</span>
-                                           <span className="text-[8px] text-gray-600 font-bold uppercase tracking-wider">{new Date(p.registered_at).toLocaleDateString()}</span>
-                                        </div>
-                                     </div>
+                          {/* Lista de Inscritos */}
+                          <div className="pl-10 space-y-4">
+                             <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em] flex items-center gap-2">
+                                <Users size={14} /> Lista de Pescadores Inscritos
+                             </h4>
+                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {(t.tournament_participants || []).length > 0 ? t.tournament_participants.map((p: any) => (
+                                   <div key={p.id} className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl flex items-center gap-4 group hover:bg-white/[0.04] transition-all">
+                                      <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 flex-shrink-0">
+                                         {p.profiles?.avatar_url ? (
+                                            <img src={p.profiles.avatar_url} className="w-full h-full object-cover" />
+                                         ) : (
+                                           <div className="w-full h-full bg-slate-800 flex items-center justify-center text-gray-500">
+                                             <User size={18} />
+                                           </div>
+                                         )}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                         <p className="font-bold text-white text-sm truncate uppercase tracking-tight">{p.profiles?.display_name || 'Participante'}</p>
+                                         <div className="flex items-center gap-2">
+                                            <span className="text-[9px] text-accent font-black">LVL {p.profiles?.level || 1}</span>
+                                            <span className="text-[8px] text-gray-600 font-bold uppercase tracking-wider">{new Date(p.registered_at).toLocaleDateString()}</span>
+                                         </div>
+                                      </div>
+                                   </div>
+                                )) : (
+                                  <div className="col-span-full py-8 text-center bg-white/[0.01] rounded-2xl border border-dashed border-white/5">
+                                     <p className="text-[10px] font-bold text-gray-700 uppercase tracking-widest">Nenhuma inscrição realizada ainda</p>
                                   </div>
-                               )) : (
-                                 <div className="col-span-full py-8 text-center bg-white/[0.01] rounded-2xl border border-dashed border-white/5">
-                                    <p className="text-[10px] font-bold text-gray-700 uppercase tracking-widest">Nenhuma inscrição realizada ainda</p>
-                                 </div>
-                               )}
-                            </div>
-                         </div>
+                                )}
+                             </div>
+                          </div>
+                       </div>
+                    )) : (
+                      <div className="py-32 text-center bg-white/[0.02] border-2 border-dashed border-white/5 rounded-[50px]">
+                         <Trophy size={100} className="mx-auto text-gray-900 mb-8" />
+                         <h3 className="text-2xl font-black text-gray-500 uppercase italic">Nenhum Torneio Ativo</h3>
+                         <p className="text-gray-600 mt-2 font-medium">Lance seu primeiro evento e comece a atrair pescadores profissionais agora.</p>
                       </div>
-                   )) : (
-                     <div className="py-32 text-center bg-white/[0.02] border-2 border-dashed border-white/5 rounded-[50px]">
-                        <Trophy size={100} className="mx-auto text-gray-900 mb-8" />
-                        <h3 className="text-2xl font-black text-gray-500 uppercase italic">Nenhum Torneio Ativo</h3>
-                        <p className="text-gray-600 mt-2 font-medium">Lance seu primeiro evento e comece a atrair pescadores profissionais agora.</p>
-                     </div>
-                   )}
-                </div>
-             </div>
-          )}
+                    )}
+                 </div>
+              </div>
+           )}
 
-        </div>
+         </div>
       </main>
 
       {/* MODAL: NOVO TORNEIO */}
@@ -809,8 +873,8 @@ export default function ResortAdminPage() {
                        <input 
                          type="datetime-local"
                          className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white font-bold outline-none focus:border-accent"
-                         value={newTournament.start_at}
-                         onChange={e => setNewTournament({...newTournament, start_at: e.target.value})}
+                         value={newTournament.event_date}
+                         onChange={e => setNewTournament({...newTournament, event_date: e.target.value})}
                        />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -861,7 +925,7 @@ export default function ResortAdminPage() {
                  <button onClick={() => setShowNewTournament(false)} className="px-10 py-5 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white transition-all">Desistir</button>
                  <button 
                   onClick={handleCreateTournament}
-                  disabled={saving || !newTournament.title || !newTournament.start_at}
+                  disabled={saving || !newTournament.title || !newTournament.event_date}
                   className="flex-1 btn-primary py-5 text-xs font-black uppercase tracking-[0.3em]"
                  >
                     {saving ? <span className="spinner" /> : 'Confirmar Lançamento'}
@@ -879,13 +943,5 @@ export default function ResortAdminPage() {
         .fade-in { animation: fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       `}</style>
     </div>
-  )
-}
-
-function ArrowRightIcon({ size = 24 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12h14M12 5l7 7-7 7" />
-    </svg>
   )
 }

@@ -41,8 +41,13 @@ export default function WelcomeOverlay({ onClose }: WelcomeOverlayProps) {
         <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-blue-500/20 blur-[100px] rounded-full animate-pulse decoration-1000" />
 
         <div className="relative z-10 flex flex-col items-center gap-6">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white shadow-2xl shadow-cyan-500/40 rotate-12">
-            <Fish size={56} className="animate-bounce" />
+          <div className="w-24 h-24 flex items-center justify-center relative">
+            <div className="absolute inset-0 bg-cyan-500/20 blur-2xl rounded-full" />
+            <img 
+              src="/images/logo.png" 
+              alt="Fishgada Logo" 
+              className="w-full h-full object-contain relative z-10 drop-shadow-[0_0_15px_rgba(0,255,255,0.4)]" 
+            />
           </div>
 
           <div className="space-y-4">

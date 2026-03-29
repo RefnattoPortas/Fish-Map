@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Navigation } from 'lucide-react'
+import { Navigation, HelpCircle } from 'lucide-react'
 import type { SpotMapView } from '@/types/database'
 import type { Map as LeafletMap, LatLngExpression } from 'leaflet'
 
@@ -85,78 +85,72 @@ export default function FishingMap({
   useEffect(() => {
     if (!mapRef.current) return
 
+    let mounted = true
+    let timeoutId: NodeJS.Timeout | null = null
     let mapInstance: LeafletMap | null = null
 
     const initMap = async () => {
-      // Se já existe uma instância ou está inicializando, não faz nada
-      if (leafletMapRef.current || isInitializingRef.current) return
+      if (!mounted || leafletMapRef.current) return
       isInitializingRef.current = true
 
       try {
         const el = mapRef.current
-        if (!el) return
+        if (!el || !mounted) return
 
         const L = (await import('leaflet')).default
+        if (!mounted) return
+        
         // @ts-expect-error - leaflet css does not have types
         await import('leaflet/dist/leaflet.css')
+        if (!mounted) return
 
-        // Se o elemento DOM já tem um mapa (comum no React 18 Strict Mode), 
-        // ou se o Leaflet injetou classes mas a instância foi perdida
+        // Limpeza de mapa residual se houver
         if ((el as any)._leaflet_id) {
-          // Limpeza agressiva: o Leaflet guarda a instância no elemento
-          // @ts-ignore
-          const existingMap = (el as any)._leaflet_id;
-          if (existingMap) {
-             // Tenta limpar as classes e propriedades que o Leaflet adiciona
-             el.classList.remove('leaflet-container', 'leaflet-touch', 'leaflet-retina', 'leaflet-fade-anim', 'leaflet-grab', 'leaflet-touch-drag', 'leaflet-touch-zoom');
-             (el as any)._leaflet_id = null;
-          }
+          el.classList.remove('leaflet-container', 'leaflet-touch', 'leaflet-retina', 'leaflet-fade-anim', 'leaflet-grab', 'leaflet-touch-drag', 'leaflet-touch-zoom');
+          (el as any)._leaflet_id = null;
         }
 
         mapInstance = L.map(el, {
           center: center,
           zoom: zoom,
-          zoomControl: false, // Desativado para customização
+          zoomControl: false,
           attributionControl: false,
         })
 
-        // Tile layer (CartoDB)
         const tileUrl = theme === 'dark'
           ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
           : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
 
         const baseLayer = L.tileLayer(tileUrl, { maxZoom: 19, subdomains: 'abcd' })
         baseLayer.addTo(mapInstance)
-        
-        // Guardar ref para poder mudar
         ;(mapInstance as any)._baseLayer = baseLayer
 
-        // Atribuição personalizada discreta
-        L.control.attribution({
-          prefix: '© Fishgada | © CartoDB'
-        }).addTo(mapInstance)
+        L.control.attribution({ prefix: '© Fishgada | © CartoDB' }).addTo(mapInstance)
 
-        // Evento de clique no mapa
         mapInstance.on('click', (e: any) => {
           onMapClickRef.current?.(e.latlng.lat, e.latlng.lng)
         })
 
-        // Emitir bounds quando o mapa é movido ou deu zoom
         const emitBounds = () => {
-          const b = mapInstance?.getBounds()
-          if (b && onBoundsChange) {
-            onBoundsChange({
-              north: b.getNorth(),
-              south: b.getSouth(),
-              east: b.getEast(),
-              west: b.getWest()
-            })
+          if (!mounted || !mapInstance || !el.isConnected) return
+          try {
+            const b = mapInstance.getBounds()
+            if (b && onBoundsChange) {
+              onBoundsChange({
+                north: b.getNorth(),
+                south: b.getSouth(),
+                east: b.getEast(),
+                west: b.getWest()
+              })
+            }
+          } catch (e) {
+            console.warn('Leaflet: getBounds failed safely.', e)
           }
         }
+
         mapInstance.on('moveend', emitBounds)
         mapInstance.on('zoomend', emitBounds)
-        // Emitir na inicialização também
-        setTimeout(emitBounds, 500)
+        timeoutId = setTimeout(emitBounds, 500)
 
         leafletMapRef.current = mapInstance
         setIsLoaded(true)
@@ -170,6 +164,9 @@ export default function FishingMap({
     initMap()
 
     return () => {
+      mounted = false
+      isInitializingRef.current = false
+      if (timeoutId) clearTimeout(timeoutId)
       if (leafletMapRef.current) {
         leafletMapRef.current.remove()
         leafletMapRef.current = null
@@ -459,8 +456,30 @@ export default function FishingMap({
           {/* Container Coluna: Legenda em baixo, Info acima */}
           <div className="flex flex-col gap-3">
              {/* Legenda */}
-             <div className="glass p-2.5 rounded-2xl border border-white/5 shadow-2xl w-[120px]">
-                <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">Legenda</p>
+             <div className="glass p-2.5 rounded-2xl border border-white/5 shadow-2xl w-[120px] relative group-help-legend">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Legenda</p>
+                  <div className="relative">
+                    <HelpCircle size={14} className="text-cyan-400 cursor-help transition-transform hover:scale-110" />
+                    {/* Popover Legenda */}
+                    <div className="absolute bottom-full left-0 mb-2 w-64 p-4 glass-elevated border border-cyan-500/30 rounded-2xl shadow-2xl hidden group-help-legend:hover:block group-help-legend:active:block backdrop-blur-xl bg-[#0f172a]/95">
+                      <div className="space-y-3">
+                        <p className="text-[10px] leading-relaxed text-white">
+                          <span className="text-[#10b981] font-black uppercase">🟢 Público:</span> Áreas de livre acesso (Rios, Represas abertas). Sem custo ou restrição de entrada.
+                        </p>
+                        <p className="text-[10px] leading-relaxed text-white">
+                          <span className="text-[#f59e0b] font-black uppercase">🟠 Comunitário:</span> Locais geridos por grupos locais ou condomínios. Acesso colaborativo.
+                        </p>
+                        <p className="text-[10px] leading-relaxed text-white">
+                          <span className="text-[#ef4444] font-black uppercase">🔴 Privado:</span> Propriedades particulares. Exige autorização prévia do proprietário.
+                        </p>
+                        <p className="text-[10px] leading-relaxed text-white border-t border-white/5 pt-2">
+                          <span className="text-[#a855f7] font-black uppercase">🟣 Parceiro:</span> Pesqueiro comercial. Possui estrutura e é destaque no Fishgada.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div className="flex flex-col gap-2">
                    {Object.entries(PRIVACY_COLORS).map(([key, color]) => (
                      <div key={key} className="flex items-center gap-2">

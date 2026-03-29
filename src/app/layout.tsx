@@ -13,6 +13,9 @@ export const metadata: Metadata = {
     description: 'A plataforma da comunidade de pesca esportiva',
     type: 'website',
   },
+  icons: {
+    icon: '/favicon.png',
+  },
 }
 
 export default function RootLayout({

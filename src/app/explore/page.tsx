@@ -200,20 +200,19 @@ export default function ExplorePage() {
               <label className="text-[10px] font-black uppercase text-gray-500 tracking-wider flex items-center gap-1">
                 Distância Máxima: <span className="text-cyan-400">{maxDistance}km</span>
               </label>
-              <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                {[5, 10, 30, 60, 100].map(d => (
-                  <button
-                    key={d}
-                    onClick={() => setMaxDistance(d)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
-                      maxDistance === d 
-                        ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.1)]' 
-                        : 'bg-white/5 border-white/5 text-gray-400 hover:bg-white/10'
-                    }`}
-                  >
-                    {d}km
-                  </button>
-                ))}
+              <div className="relative">
+                <select 
+                  value={maxDistance}
+                  onChange={(e) => setMaxDistance(Number(e.target.value))}
+                  className="w-full bg-[#0a0f1a] border border-white/10 text-white rounded-xl py-2.5 pl-4 pr-10 focus:outline-none focus:border-cyan-500/50 transition-all font-bold text-sm appearance-none cursor-pointer hover:border-white/20"
+                >
+                  {[5, 10, 30, 60, 100].map(d => (
+                    <option key={d} value={d}>{d} km</option>
+                  ))}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/30">
+                   <Navigation size={14} className="rotate-90" />
+                </div>
               </div>
             </div>
 

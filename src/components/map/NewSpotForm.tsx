@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, MapPin, Info, Lock, Globe, Users, Waves, Save, Camera } from 'lucide-react'
+import { X, MapPin, HelpCircle, Lock, Globe, Users, Waves, Save, Camera } from 'lucide-react'
 
 interface NewSpotFormProps {
   userId: string
@@ -244,7 +244,29 @@ export default function NewSpotForm({ userId, isOnline, onClose, onSuccess, init
 
           {/* Nível de Privacidade */}
           <div>
-            <label className="label">Privacidade do Local</label>
+            <div className="flex items-center gap-2 mb-2 relative group-help">
+              <label className="label mb-0">Privacidade do Local</label>
+              <div className="relative">
+                <HelpCircle size={14} className="text-cyan-400 cursor-help transition-transform hover:scale-110" />
+                {/* Popover */}
+                <div className="absolute left-6 top-1/2 -translate-y-1/2 w-64 p-4 glass-elevated border border-cyan-500/30 rounded-2xl shadow-[0_0_30px_rgba(0,255,255,0.1)] z-[2000] hidden group-help:hover:block group-help:active:block backdrop-blur-xl bg-[#0f172a]/95">
+                  <div className="space-y-3">
+                    <p className="text-[10px] leading-relaxed text-white">
+                      <span className="text-[#10b981] font-black uppercase">🟢 Público:</span> Áreas de livre acesso (Rios, Represas abertas). Sem custo ou restrição de entrada.
+                    </p>
+                    <p className="text-[10px] leading-relaxed text-white">
+                      <span className="text-[#f59e0b] font-black uppercase">🟠 Comunitário:</span> Locais geridos por grupos locais ou condomínios. Acesso colaborativo.
+                    </p>
+                    <p className="text-[10px] leading-relaxed text-white">
+                      <span className="text-[#ef4444] font-black uppercase">🔴 Privado:</span> Propriedades particulares. Exige autorização prévia do proprietário.
+                    </p>
+                    <p className="text-[10px] leading-relaxed text-white border-t border-white/5 pt-2">
+                      <span className="text-[#a855f7] font-black uppercase">🟣 Parceiro:</span> Pesqueiro comercial. Possui estrutura e é destaque no Fishgada.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               {[
                 { id: 'public', icon: <Globe size={18} />, label: 'Público', desc: 'Para todos' },

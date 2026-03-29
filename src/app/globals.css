@@ -44,14 +44,14 @@
   }
 
   html, body {
-    height: 100dvh;
-    height: 100vh; /* Fallback */
-    overflow: hidden;
+    min-height: 100dvh;
     background-color: var(--color-bg-primary);
     color: var(--color-text-primary);
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   /* Scrollbar personalizada */
@@ -518,4 +518,30 @@
     from { background-position: -200% 0; }
     to { background-position: 200% 0; }
   }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Landing Page Utilities */
+  .animate-gradient-x {
+    background-size: 200% 200%;
+    animation: gradient-x 15s ease infinite;
+  }
+
+  @keyframes gradient-x {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .perspective-1000 { perspective: 1000px; }
+  .preserve-3d { transform-style: preserve-3d; }
+  .backface-hidden { backface-visibility: hidden; }
+  
+  .rotate-y-12 { transform: rotateY(12deg); }
+  .rotate-y-12-neg { transform: rotateY(-12deg); }
 }

@@ -16,7 +16,7 @@ import { User as SupabaseUser } from '@supabase/supabase-js'
 import { getRankByLevel } from '@/lib/utils/ranks'
 
 const navItems = [
-  { href: '/',           icon: Map,      label: 'Mapa',           id: 'nav-map' },
+  { href: '/radar',      icon: Map,      label: 'Mapa',           id: 'nav-map' },
   { href: '/explore',    icon: Compass,  label: 'Explorar Locais',id: 'nav-explore' },
   { href: '/captures',   icon: Fish,     label: 'Minhas Capturas', id: 'nav-captures' },
   { href: '/especies',   icon: Award,    label: 'Catálogo / Álbum', id: 'nav-species' },
@@ -100,7 +100,7 @@ export default function Sidebar({
   const xpForNextLevel = userLevel * 500
   const xpProgress = Math.min((userXP % 500) / 500 * 100, 100)
 
-  const showDefaultMobileButton = pathname !== '/'
+  const showDefaultMobileButton = pathname !== '/' && pathname !== '/radar'
 
   useEffect(() => {
     const handleToggle = () => setIsOpenMobile(prev => !prev)
@@ -140,8 +140,8 @@ export default function Sidebar({
 
       <aside
         id="sidebar"
-        className={`glass flex flex-col border-r border-white/5 transition-transform duration-300 z-[9999]
-          ${isOpenMobile ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} 
+        className={`glass flex flex-col transition-transform duration-300 z-[9999]
+          ${isOpenMobile ? 'translate-x-0 border-r-0 shadow-none' : '-translate-x-full md:translate-x-0 border-r border-white/5'} 
           fixed inset-y-0 left-0 md:relative h-full`}
         style={{
           width: expanded ? 'var(--sidebar-expanded)' : 'var(--sidebar-width)',
@@ -166,22 +166,20 @@ export default function Sidebar({
       </button>
 
       {/* Container de Conteúdo com Scroll Interno */}
-      <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden h-full">
+      <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden h-full scrollbar-none">
         {/* Logo */}
-        <div className="flex items-center gap-3 p-3 mb-2 mt-1" style={{ minHeight: 60 }}>
-          <Link href="/" className="flex-shrink-0 flex items-center justify-center rounded-xl overflow-hidden cursor-pointer mix-blend-screen"
-            style={{
-              width: expanded ? 180 : 40, 
-              height: 40,
-              transition: 'all 0.3s ease'
-            }}
-          >
-            <img 
-              src="/images/logo.png" 
-              alt="Fishgada" 
-              className={`h-full object-contain ${expanded ? 'w-full' : 'w-auto'}`}
-              style={{ filter: 'drop-shadow(0 0 10px rgba(0,255,255,0.3))' }}
-            />
+        <div className={`flex items-center justify-center p-0 mb-2 mt-4 transition-all duration-300 
+          ${expanded ? (isOpenMobile ? 'h-[110px]' : 'h-[160px]') : 'h-[60px]'}`}>
+          <Link href="/radar" className="flex items-center justify-center cursor-pointer group w-full h-full">
+            <div className={`flex-shrink-0 flex items-center justify-center overflow-hidden transition-all duration-500 
+              ${expanded ? 'w-full h-full' : 'w-10 h-10'}`}>
+              <img 
+                src="/images/logo.png" 
+                alt="Fishgada" 
+                className="w-full h-full object-contain"
+                style={{ filter: 'drop-shadow(0 0 15px rgba(0,255,255,0.4))' }}
+              />
+            </div>
           </Link>
         </div>
 
