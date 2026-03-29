@@ -345,6 +345,7 @@ export interface Database {
           tamanho_minimo_cm?: number | null
           imagem_url?: string | null
           is_active?: boolean
+          created_at?: string
         }
         Update: {
           id?: string
@@ -358,6 +359,33 @@ export interface Database {
           tamanho_minimo_cm?: number | null
           imagem_url?: string | null
           is_active?: boolean
+          created_at?: string
+        }
+      }
+      resort_leads: {
+        Row: {
+          id: string
+          owner_name: string
+          resort_name: string
+          phone: string
+          status: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          owner_name: string
+          resort_name: string
+          phone: string
+          status?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          owner_name?: string
+          resort_name?: string
+          phone?: string
+          status?: string
+          created_at?: string
         }
       }
     }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { 
-  Map, Fish, Shield, Zap, Tooltip, 
+  Map, Fish, Shield, Zap, 
   Smartphone, Database, Users, ArrowRight,
   CheckCircle2, Store, Sparkles, Instagram,
   Play, Smartphone as Mobile
@@ -20,8 +20,8 @@ export default function LandingPage({ onEnterApp }: { onEnterApp: () => void }) 
     setLoading(true)
     try {
       const supabase = getSupabaseClient()
-      const { error } = await supabase
-        .from('resort_leads')
+      const { error } = await (supabase
+        .from('resort_leads' as any) as any)
         .insert([{
           owner_name: leadForm.name,
           resort_name: leadForm.resortName,
