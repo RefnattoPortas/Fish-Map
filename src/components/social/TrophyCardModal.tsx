@@ -82,12 +82,20 @@ export default function TrophyCardModal({ isOpen, onClose, spot, userId }: Troph
       })
       setImageGenerated(dataUrl)
     } catch (err: any) {
-      console.error('Erro detalhado ao gerar imagem:', {
-        message: err.message,
-        stack: err.stack,
-        err
-      })
-      alert('Não foi possível gerar a imagem. Verifique se a foto do peixe é válida ou tente novamente.')
+      console.error('Erro na primeira tentativa de geração:', err)
+      // Tentar novamente com configurações mais simples (1x pixel ratio e sem cacheBust complexo)
+      try {
+        if (!cardRef.current) return
+        const dataUrlSimple = await toPng(cardRef.current, {
+           pixelRatio: 1,
+           backgroundColor: '#0a0f1a',
+           cacheBust: true
+        })
+        setImageGenerated(dataUrlSimple)
+      } catch (err2) {
+        console.error('Falha crítica ao gerar imagem:', err2)
+        alert('As imagens (avatar ou foto) do peixe não permitiram a captura automática. Tente recarregar a página ou tirar um print da tela.')
+      }
     } finally {
       setIsGenerating(false)
     }
@@ -159,26 +167,28 @@ export default function TrophyCardModal({ isOpen, onClose, spot, userId }: Troph
                 style={{ backgroundColor: userRank?.color || 'var(--color-accent-primary)' }}
               />
 
-              {/* BLOCO SUPERIOR (Cabeçalho do Pescador) */}
-              <div className="p-5 flex items-center justify-between z-10 border-b border-white/5 bg-[#0a0f1a]/80 backdrop-blur-sm">
+              {/* BLOCO SUPERIOR (Cabeçalho 100%) */}
+              <div className="absolute top-0 inset-x-0 z-20 flex items-center justify-between p-4 bg-black/90 backdrop-blur-md border-b border-white/5 shadow-2xl rounded-t-[32px]">
                  <div className="flex items-center gap-3">
-                     <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shadow-lg">
+                     <div className="w-9 h-9 rounded-xl overflow-hidden border border-white/20 shadow-lg shrink-0">
                         {profile?.avatar_url ? (
                           <img src={profile.avatar_url} className="w-full h-full object-cover" crossOrigin="anonymous" />
                         ) : <User className="w-full h-full p-2 text-gray-500" />}
                      </div>
-                     <div className="flex items-center gap-2">
-                        <span className="text-sm font-black text-white">{profile?.display_name || 'Mestre'}</span>
-                        {userRank && (
-                           <div className="flex items-center gap-1">
-                              <div className="w-[1px] h-2.5 bg-white/20" />
-                              <userRank.icon size={12} style={{ color: userRank.color }} />
-                           </div>
-                        )}
+                     <div className="flex flex-col">
+                        <span className="text-[11px] font-black text-white">{profile?.display_name || 'Mestre'}</span>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                           {userRank && (
+                              <div className="flex items-center gap-1 shrink-0">
+                                 <userRank.icon size={8} style={{ color: userRank.color }} />
+                                 <span className="text-[7px] font-black uppercase tracking-widest" style={{ color: userRank.color }}>{userRank.title}</span>
+                              </div>
+                           )}
+                        </div>
                      </div>
                  </div>
                  {capture?.is_trophy && (
-                    <div className="w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-amber-500/20 backdrop-blur-md border border-amber-500/30 flex items-center justify-center shadow-lg">
                        <Trophy size={14} className="text-amber-500 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
                     </div>
                  )}
@@ -210,36 +220,39 @@ export default function TrophyCardModal({ isOpen, onClose, spot, userId }: Troph
                  </div>
               </div>
 
-              {/* BLOCO INFERIOR (Metadados da Captura) - Compacto para 3:4 */}
-              <div className="flex-1 p-4 z-10 flex flex-col justify-center bg-[#0a0f1a]">
+              {/* BLOCO INFERIOR (Metadados em 3 Linhas) */}
+              <div className="flex-1 px-5 py-4 z-10 flex flex-col justify-center bg-black gap-2.5">
                  
-                 {/* Espécie, Peso e Local */}
-                 <div className="flex justify-between items-center gap-2">
-                    <div className="flex flex-col min-w-0">
-                       <h2 className="text-sm font-black text-white uppercase tracking-tighter italic truncate leading-tight">
-                         {capture?.species || 'Expedição'}
-                       </h2>
-                       <div className="flex items-center gap-1.5 mt-0.5">
-                          <MapPin size={8} className="text-cyan-400" />
-                          <span className="text-[7px] font-black text-white/50 uppercase tracking-[0.1em] truncate max-w-[120px]">{spot?.title}</span>
-                          <div className="w-[1px] h-1.5 bg-white/10 mx-1" />
-                          <span className="text-[7px] text-gray-600 font-black uppercase tracking-widest">
+                 {/* Linha 1: Nome do Peixe */}
+                 <h2 className="text-lg font-black text-white uppercase tracking-tighter italic truncate leading-none">
+                   {capture?.species || 'Expedição'}
+                 </h2>
+
+                 {/* Linha 2: Local com Destaque */}
+                 <div className="flex items-center gap-2 px-2.5 py-1.5 bg-cyan-500/10 border border-cyan-500/20 rounded-lg w-fit">
+                    <MapPin size={10} className="text-cyan-400" />
+                    <span className="text-[9px] font-black text-cyan-400 uppercase tracking-[0.15em] truncate max-w-[200px]">{spot?.title}</span>
+                 </div>
+
+                 {/* Linha 3: Outras Info (Peso e Data) */}
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                       {capture?.weight_kg && (
+                         <div className="flex items-baseline gap-1">
+                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Peso:</span>
+                            <span className="text-sm font-black text-white leading-none">{capture.weight_kg}kg</span>
+                         </div>
+                       )}
+                       <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Data:</span>
+                          <span className="text-[9px] text-white/70 font-black uppercase tracking-widest">
                             {new Date(capture?.captured_at || new Date()).toLocaleDateString('pt-BR')}
                           </span>
                        </div>
                     </div>
-
-                    {capture?.weight_kg && (
-                      <div className="flex flex-col items-end flex-shrink-0">
-                         <div className="flex items-baseline gap-0.5">
-                            <span className="text-lg font-black text-cyan-400 leading-none">{capture.weight_kg}</span>
-                            <span className="text-[8px] text-white/50 lowercase font-bold">kg</span>
-                         </div>
-                      </div>
-                    )}
-
-                    <div className="p-1 bg-white rounded flex-shrink-0 ml-1">
-                        <QrCode size={16} className="text-dark" strokeWidth={2.5} />
+                    
+                    <div className="p-0.5 bg-white rounded flex-shrink-0">
+                        <QrCode size={14} className="text-dark" strokeWidth={2.5} />
                     </div>
                  </div>
               </div>

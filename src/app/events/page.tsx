@@ -14,7 +14,7 @@ interface Tournament {
   id: string
   title: string
   description: string
-  start_at: string
+  event_date: string
   entry_fee: number
   prize_pool: string | null
   status: string
@@ -66,7 +66,7 @@ export default function EventsPage() {
           spots(id, title)
         )
       `)
-      .order('start_at', { ascending: true })
+      .order('event_date', { ascending: true })
 
     if (error) {
        if (error.code !== '42P01' && error.code !== 'PGRST204' && error.code !== 'PGRST205') {
