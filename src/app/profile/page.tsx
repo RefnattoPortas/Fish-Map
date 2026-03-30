@@ -24,6 +24,7 @@ export default function ProfilePage() {
   const [showResortForm, setShowResortForm] = useState(false)
   const [isOnline, setIsOnline] = useState(true)
   const [followedResorts, setFollowedResorts] = useState<any[]>([])
+  const [profileSubTab, setProfileSubTab] = useState<'mural' | 'inscriptions' | 'achievements'>('mural')
 
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -371,72 +372,81 @@ export default function ProfilePage() {
                 ))}
               </div>
 
-              {/* Mural dos Pesqueiros (Followed Feed) */}
-              {followedResorts.length > 0 && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-white font-black text-sm uppercase tracking-widest flex items-center gap-2">
-                       <Megaphone size={18} className="text-accent" /> Mural dos Pesqueiros Seguidos
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {followedResorts.map(resort => (
-                      <div key={resort.id} className="relative glass rounded-[32px] border border-white/5 overflow-hidden flex flex-col group hover:border-accent/30 transition-all">
-                        {/* Header Image / Pattern */}
-                        <div className="h-20 bg-gradient-to-r from-accent/10 to-blue-500/10 relative">
-                           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '12px 12px' }} />
-                           <div className="absolute bottom-0 left-6 translate-y-1/2">
-                              <div className="w-12 h-12 rounded-2xl bg-slate-900 border-2 border-[#0a0f1a] flex items-center justify-center p-2 shadow-xl">
-                                 {resort.photo_url ? (
-                                   <img src={resort.photo_url} className="w-full h-full object-cover rounded-lg" />
-                                 ) : <Warehouse size={20} className="text-accent" />}
-                              </div>
-                           </div>
-                        </div>
-                        
-                        <div className="p-6 pt-10 space-y-3">
-                           <div className="flex items-center justify-between">
-                              <h4 className="text-lg font-black text-white truncate">{resort.title}</h4>
-                              {resort.resort_active_highlight && (
-                                <span className="text-[9px] font-black text-amber-500 uppercase bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20">
-                                  {resort.resort_active_highlight}
-                                </span>
-                              )}
-                           </div>
-                           
-                           {resort.resort_notice_board ? (
-                             <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                               <p className="text-xs text-gray-300 italic leading-relaxed">
-                                  "{resort.resort_notice_board}"
-                               </p>
-                             </div>
-                           ) : (
-                             <p className="text-[11px] text-gray-500 font-medium italic">Nenhum recado no mural ainda.</p>
-                           )}
+              {/* Sub-Tab Navigation */}
+              <div className="flex gap-4 border-b border-white/5 pb-1">
+                {[
+                  { id: 'mural', label: 'Feed/Mural', icon: Megaphone },
+                  { id: 'inscriptions', label: 'Inscrições', icon: Trophy },
+                  { id: 'achievements', label: 'Medalhas', icon: Award },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setProfileSubTab(tab.id as any)}
+                    className={`pb-3 px-1 text-[10px] font-black uppercase tracking-widest transition-all relative flex items-center gap-2 ${profileSubTab === tab.id ? 'text-accent' : 'text-gray-500 hover:text-white'}`}
+                  >
+                    <tab.icon size={14} />
+                    {tab.label}
+                    {profileSubTab === tab.id && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-accent" />}
+                  </button>
+                ))}
+              </div>
 
-                           <div className="flex items-center justify-between pt-2">
-                             <div className="flex gap-2">
-                                {resort.resort_infrastructure?.restaurante && <Utensils size={14} className="text-gray-600" />}
-                                {resort.resort_infrastructure?.pousada && <Warehouse size={14} className="text-gray-600" />}
-                             </div>
-                             <a 
-                               href={`/radar?selectSpot=${resort.id}`}
-                               className="text-[10px] font-black uppercase text-accent hover:underline flex items-center gap-1"
-                             >
-                               Ver no Mapa <ArrowRight size={12} />
-                             </a>
-                           </div>
-                        </div>
+              {/* Sub-Tab Content */}
+              <div className="fade-in">
+                {profileSubTab === 'mural' && (
+                  <div className="space-y-6">
+                    {followedResorts.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {followedResorts.map(resort => (
+                          <div key={resort.id} className="relative glass rounded-[32px] border border-white/5 overflow-hidden flex flex-col group hover:border-accent/30 transition-all">
+                            <div className="h-20 bg-gradient-to-r from-accent/10 to-blue-500/10 relative">
+                               <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '12px 12px' }} />
+                               <div className="absolute bottom-0 left-6 translate-y-1/2">
+                                  <div className="w-12 h-12 rounded-2xl bg-slate-900 border-2 border-[#0a0f1a] flex items-center justify-center p-2 shadow-xl">
+                                     {resort.photo_url ? (
+                                       <img src={resort.photo_url} className="w-full h-full object-cover rounded-lg" />
+                                     ) : <Warehouse size={20} className="text-accent" />}
+                                  </div>
+                               </div>
+                            </div>
+                            <div className="p-6 pt-10 space-y-3">
+                               <div className="flex items-center justify-between">
+                                  <h4 className="text-lg font-black text-white truncate">{resort.title}</h4>
+                                  {resort.resort_active_highlight && (
+                                    <span className="text-[9px] font-black text-amber-500 uppercase bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20">
+                                      {resort.resort_active_highlight}
+                                    </span>
+                                  )}
+                               </div>
+                               {resort.resort_notice_board ? (
+                                 <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                                   <p className="text-xs text-gray-300 italic leading-relaxed">"{resort.resort_notice_board}"</p>
+                                 </div>
+                               ) : (
+                                 <p className="text-[11px] text-gray-500 font-medium italic">Nenhum recado no mural ainda.</p>
+                               )}
+                               <div className="flex items-center justify-between pt-2">
+                                 <div className="flex gap-2">
+                                    {resort.resort_infrastructure?.restaurante && <Utensils size={14} className="text-gray-600" />}
+                                    {resort.resort_infrastructure?.pousada && <Warehouse size={14} className="text-gray-600" />}
+                                 </div>
+                                 <a href={`/radar?selectSpot=${resort.id}`} className="text-[10px] font-black uppercase text-accent hover:underline flex items-center gap-1">Ver no Mapa <ArrowRight size={12} /></a>
+                               </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    ) : (
+                      <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[32px]">
+                        <Megaphone size={32} className="text-gray-700 mx-auto mb-4" />
+                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Siga pesqueiros no mapa para ver as novidades aqui</p>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Bottom Sections */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 <div className="glass p-8 rounded-[32px] border border-white/5 space-y-6">
-                    <h3 className="text-white font-black text-sm uppercase tracking-widest flex items-center gap-2"><Trophy size={16} className="text-accent" /> Minhas Inscrições</h3>
+                {profileSubTab === 'inscriptions' && (
+                  <div className="glass p-8 rounded-[32px] border border-white/5 space-y-6">
                     <div className="space-y-4">
                       {inscriptions.length > 0 ? inscriptions.map((insc: any) => (
                         <div key={insc.id} className="flex items-center justify-between p-4 bg-white/[0.03] rounded-2xl border border-white/5">
@@ -449,12 +459,18 @@ export default function ProfilePage() {
                               <p className="text-[10px] text-accent font-black">{new Date(insc.tournaments?.event_date).toLocaleDateString('pt-BR')}</p>
                            </div>
                         </div>
-                      )) : <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-2xl"><p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Nenhum evento reservado</p></div>}
+                      )) : (
+                        <div className="py-20 text-center">
+                          <Trophy size={32} className="text-gray-700 mx-auto mb-4" />
+                          <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Nenhuma inscrição em torneios</p>
+                        </div>
+                      )}
                     </div>
-                 </div>
+                  </div>
+                )}
 
-                 <div className="glass p-8 rounded-[32px] border border-white/5 space-y-6">
-                    <h3 className="text-white font-black text-sm uppercase tracking-widest flex items-center gap-2"><Award size={16} className="text-amber-500" /> Medalhas e Recordes</h3>
+                {profileSubTab === 'achievements' && (
+                  <div className="glass p-8 rounded-[32px] border border-white/5 space-y-6">
                     <div className="grid grid-cols-1 gap-4">
                        {achievements.length > 0 ? achievements.map((ua: any) => (
                           <div key={ua.id} className="flex items-center justify-between p-4 bg-white/[0.03] rounded-2xl border border-white/5">
@@ -467,13 +483,19 @@ export default function ProfilePage() {
                                <div>
                                   <p className="text-white font-bold text-sm">{ua.achievements.name}</p>
                                   <p className="text-[10px] text-gray-500 uppercase font-black">{ua.achievements.description}</p>
-                               </div>
+                                </div>
                             </div>
                             <p className="text-[10px] text-accent font-black">{new Date(ua.earned_at).toLocaleDateString('pt-BR')}</p>
                           </div>
-                       )) : <div className="py-10 text-center border-2 border-dashed border-white/5 rounded-2xl"><p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Nenhuma medalha conquistada</p></div>}
+                       )) : (
+                        <div className="py-20 text-center">
+                          <Award size={32} className="text-gray-700 mx-auto mb-4" />
+                          <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Nenhuma medalha conquistada</p>
+                        </div>
+                       )}
                     </div>
-                 </div>
+                  </div>
+                )}
               </div>
             </>
           ) : (
