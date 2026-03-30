@@ -398,9 +398,9 @@ export default function ExplorePage() {
                 const expTags = EXPERIENCE_CATEGORIES.filter(c => c.id !== 'all' && matchesCategory(spot, c.id))
 
                 const colorHex = pinColor.replace('#', '')
-                const imageUrl = spot.is_resort && (spot as any).photos?.[0]
-                  ? (spot as any).photos[0]
-                  : `https://placehold.co/600x400/0a0f1a/${colorHex}?font=Montserrat&text=${encodeURIComponent(spot.title.charAt(0).toUpperCase() + spot.title.slice(1, 15))}`
+                const imageUrl = spot.photo_url || 
+                  (spot.is_resort && (spot as any).resort_photos?.[0]) ||
+                  `https://placehold.co/600x400/0a0f1a/${colorHex}?font=Montserrat&text=${encodeURIComponent(spot.title.charAt(0).toUpperCase() + spot.title.slice(1, 15))}`
 
                 return (
                   <div

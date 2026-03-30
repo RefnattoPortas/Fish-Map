@@ -76,6 +76,15 @@ export default function SpotDetailsView({
   useEffect(() => {
     if (spot && isOpen) {
       fetchSpotData()
+      
+      // Load follow state for this specific spot
+      try {
+        const followed = JSON.parse(localStorage.getItem('followed_spots') || '[]')
+        setIsFollowing(followed.includes(spot.id))
+      } catch (e) {
+        setIsFollowing(false)
+      }
+
       // Se for um pesqueiro, a aba Infra é a prioridade
       if (spot.is_resort) {
         setActiveTab('infra')
@@ -176,6 +185,24 @@ export default function SpotDetailsView({
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords}`, '_blank')
   }
 
+  const toggleFollow = () => {
+    if (!spot) return
+    try {
+      const followed = JSON.parse(localStorage.getItem('followed_spots') || '[]')
+      if (isFollowing) {
+        const newFollowed = followed.filter((id: string) => id !== spot.id)
+        localStorage.setItem('followed_spots', JSON.stringify(newFollowed))
+        setIsFollowing(false)
+      } else {
+        followed.push(spot.id)
+        localStorage.setItem('followed_spots', JSON.stringify(Array.from(new Set(followed))))
+        setIsFollowing(true)
+      }
+    } catch (e) {
+      console.error('Error toggling follow status', e)
+    }
+  }
+
   return (
     <>
       {/* Backdrop */}
@@ -256,7 +283,7 @@ export default function SpotDetailsView({
         {/* Action Bar */}
         <div className="flex border-b border-white/5 bg-white/[0.02]">
           <button 
-            onClick={() => setIsFollowing(!isFollowing)}
+            onClick={toggleFollow}
             className={`flex-1 py-4 flex items-center justify-center gap-2 text-sm font-bold transition-all ${
               isFollowing ? 'text-accent' : 'text-gray-400 hover:text-white'
             }`}

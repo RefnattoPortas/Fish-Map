@@ -33,14 +33,15 @@ export default function WelcomeOverlay({ onClose }: WelcomeOverlayProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-[5000] flex items-center justify-center bg-black/80 backdrop-blur-xl animate-in fade-in duration-500">
-      <div className="relative w-full max-w-2xl p-8 md:p-12 glass shadow-[0_0_100px_rgba(0,255,255,0.2)] rounded-[40px] border border-cyan-500/30 text-center overflow-hidden">
-        
-        {/* Glow Effects */}
-        <div className="absolute -top-24 -left-24 w-64 h-64 bg-cyan-500/20 blur-[100px] rounded-full animate-pulse" />
-        <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-blue-500/20 blur-[100px] rounded-full animate-pulse decoration-1000" />
+    <div className="fixed inset-0 z-[5000] bg-black/80 backdrop-blur-xl animate-in fade-in duration-500 overflow-y-auto custom-scrollbar">
+      <div className="min-h-full p-4 sm:p-6 md:p-12 flex flex-col items-center justify-center">
+        <div className="relative w-full max-w-2xl p-6 sm:p-8 md:p-12 glass shadow-[0_0_100px_rgba(0,255,255,0.2)] rounded-[32px] sm:rounded-[40px] border border-cyan-500/30 text-center overflow-hidden shrink-0">
+          
+          {/* Glow Effects */}
+          <div className="absolute -top-24 -left-24 w-64 h-64 bg-cyan-500/20 blur-[100px] rounded-full animate-pulse pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-blue-500/20 blur-[100px] rounded-full animate-pulse pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col items-center gap-6">
+          <div className="relative z-10 flex flex-col items-center gap-6">
           <div className="w-24 h-24 flex items-center justify-center relative">
             <div className="absolute inset-0 bg-cyan-500/20 blur-2xl rounded-full" />
             <img 
@@ -98,6 +99,7 @@ export default function WelcomeOverlay({ onClose }: WelcomeOverlayProps) {
             {loading ? 'Preparando rede...' : 'Bora pescar!'}
           </button>
         </div>
+    </div>
       </div>
     </div>
   )
