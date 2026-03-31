@@ -225,7 +225,7 @@ export default function SpeciesCatalogPage() {
                 <div className="w-12 h-1.5 bg-white/20 rounded-full" />
               </div>
 
-              <div className="flex justify-between items-start pt-4 sm:pt-0">
+              <div className="flex justify-between items-start pt-8 sm:pt-6">
                 <div className="bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-xs font-black text-white flex items-center gap-1.5 border border-white/10">
                   <MapPin size={12} className="text-accent" /> {selectedSpecies.habitat}
                 </div>
@@ -237,11 +237,11 @@ export default function SpeciesCatalogPage() {
               </div>
 
               {/* Imagem do peixe com drop shadow enorme */}
-              <div className="absolute bottom-[-10%] inset-x-0 flex justify-center pointer-events-none">
+              <div className="absolute bottom-[-5%] inset-x-0 flex justify-center pointer-events-none">
                 <img 
                   src={selectedSpecies.imagem_url || DEFAULT_FISH_IMG} 
                   alt={selectedSpecies.nome_comum}
-                  className={`h-40 object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)] ${selectedSpecies.total_capturas > 0 ? '' : 'brightness-50 grayscale'}`}
+                  className={`h-44 object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)] ${selectedSpecies.total_capturas > 0 ? '' : 'brightness-50 grayscale'}`}
                 />
               </div>
             </div>
