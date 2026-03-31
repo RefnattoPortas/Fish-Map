@@ -187,7 +187,10 @@ function HomeContent() {
       })
     }
     if (filters.lureType) {
-      result = result.filter(s => s.latest_lure_type === filters.lureType)
+      result = result.filter(s => 
+        s.latest_lure_type === filters.lureType || 
+        ((s as any).searchable_lures || '').includes(filters.lureType)
+      )
     }
     if (filters.waterType) {
       result = result.filter(s => s.water_type === filters.waterType)

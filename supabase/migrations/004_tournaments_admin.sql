@@ -109,6 +109,8 @@ SELECT
     fr.main_species    AS resort_main_species,
     -- Agregação de espécies capturadas para busca/filtro
     (SELECT STRING_AGG(DISTINCT species, ' ') FROM public.captures WHERE spot_id = s.id) AS searchable_species,
+    -- Agregação de tipos de isca para busca/filtro
+    (SELECT STRING_AGG(DISTINCT se.lure_type, ' ') FROM public.setups se JOIN public.captures ca ON ca.id = se.capture_id WHERE ca.spot_id = s.id) AS searchable_lures,
     -- Contagem de torneios abertos
     (SELECT COUNT(*) FROM public.tournaments t WHERE t.resort_id = fr.id AND t.status = 'open') AS open_tournaments_count
 FROM public.spots s
