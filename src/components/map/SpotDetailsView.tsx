@@ -64,6 +64,7 @@ export default function SpotDetailsView({
   const [activeTab, setActiveTab] = useState<'insights' | 'feed' | 'ranking' | 'infra'>('insights')
   const [showTrophyModal, setShowTrophyModal] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [selectedViewerPhoto, setSelectedViewerPhoto] = useState<string | null>(null)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -205,7 +206,6 @@ export default function SpotDetailsView({
 
   return (
     <>
-      {/* Backdrop */}
       {isOpen && (
         <div 
           className="fixed inset-0 z-[1100] bg-black/80 transition-opacity"
@@ -213,20 +213,18 @@ export default function SpotDetailsView({
         />
       )}
 
-      {/* Main View Panel */}
       <div 
         className={`fixed inset-y-0 right-0 z-[1200] w-full max-w-[480px] glass-elevated shadow-2xl transition-transform duration-500 ease-out border-l border-white/10 flex flex-col ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        {/* Header Section / Photo Carousel */}
-        <div className="relative h-64 flex-shrink-0 bg-dark overflow-hidden group">
+        <div className="relative h-64 md:h-80 flex-shrink-0 bg-dark overflow-hidden group">
           {spot.is_resort && (spot as any).resort_photos && (spot as any).resort_photos.length > 0 ? (
             <div className="flex w-full h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide">
               {(spot as any).resort_photos.map((url: string, i: number) => (
                 <div key={i} className="min-w-full h-full snap-center relative">
                   <img src={url} className="w-full h-full object-cover" alt={`${spot.title} ${i+1}`} />
-                  <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-1 z-10 md:hidden">
                      {(spot as any).resort_photos.map((_: any, dotIdx: number) => (
                        <div key={dotIdx} className={`w-1.5 h-1.5 rounded-full ${i === dotIdx ? 'bg-accent' : 'bg-white/30'}`} />
                      ))}
@@ -241,50 +239,53 @@ export default function SpotDetailsView({
               alt={spot.title}
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a] via-transparent to-transparent pointer-events-none" />
+
+          {spot.is_resort && (spot as any).resort_photos?.length > 1 && (
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 px-4 flex justify-between pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+               <div className="text-white/50 text-xs font-bold bg-black/40 px-2 py-1 rounded-full">Arraste para ver mais</div>
+            </div>
+          )}
+
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a] via-transparent to-[#0a0f1a]/40 pointer-events-none" />
           
           <button 
             onClick={onClose}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-white/10 transition-colors"
+            className="absolute top-4 right-4 w-10 h-10 rounded-full glass-elevated border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all hover:scale-110 active:scale-95 shadow-lg z-[1201]"
           >
-            <X size={20} />
+            <X size={20} className="text-white" />
           </button>
 
           <div className="absolute bottom-6 left-6 right-6">
             <div className="flex items-center gap-2 mb-2">
               <span className="badge badge-green px-3 py-1 text-[10px] uppercase font-bold tracking-wider">
-                {spot.is_resort ? 'Pesqueiro' : (spot.water_type || 'Ponto')}
+                {spot.is_resort ? 'Pesqueiro Oficial' : (spot.water_type || 'Ponto de Pesca')}
               </span>
               {spot.is_resort_partner && (
                 <span className="badge badge-amber px-3 py-1 text-[10px] uppercase font-bold tracking-wider flex items-center gap-1">
-                  <Star size={10} fill="currentColor" /> Parceiro
+                  <Star size={10} fill="currentColor" /> Parceiro Fundador
                 </span>
               )}
-              <span className="badge badge-blue px-3 py-1 text-[10px] uppercase font-bold tracking-wider">
-                {spot.privacy_level}
-              </span>
             </div>
-            <h1 className="text-2xl font-black text-white mb-2">{spot.title}</h1>
+            <h1 className="text-3xl md:text-4xl font-black text-white mb-2 leading-none">{spot.title}</h1>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-gray-300">
+              <div className="flex items-center gap-2 text-sm text-gray-400">
                 <MapPin size={14} className="text-accent" />
-                <span>Localização Protegida</span>
+                <span className="font-bold uppercase tracking-widest text-[10px]">Localização Protegida</span>
               </div>
               <button 
                 onClick={handleOpenMaps}
-                className="btn-primary py-2 px-4 text-xs flex items-center gap-2"
+                className="btn-primary py-3 px-6 text-[10px] font-black flex items-center gap-2 shadow-xl shadow-accent/20"
               >
-                <Navigation size={14} /> Como Chegar
+                <Navigation size={14} /> COMO CHEGAR
               </button>
             </div>
           </div>
         </div>
 
-        {/* Action Bar */}
         <div className="flex border-b border-white/5 bg-white/[0.02]">
           <button 
             onClick={toggleFollow}
-            className={`flex-1 py-4 flex items-center justify-center gap-2 text-sm font-bold transition-all ${
+            className={`flex-1 py-4 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest transition-all ${
               isFollowing ? 'text-accent' : 'text-gray-400 hover:text-white'
             }`}
           >
@@ -294,15 +295,14 @@ export default function SpotDetailsView({
           <div className="w-[1px] bg-white/5" />
           <button 
             onClick={() => setShowTrophyModal(true)}
-            className="flex-1 py-4 flex items-center justify-center gap-2 text-sm font-bold text-gray-400 hover:text-white transition-all"
+            className="flex-1 py-4 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-white transition-all"
           >
             <Share2 size={18} /> Compartilhar
           </button>
         </div>
 
-        {/* Tabs Navigation */}
         <div className="px-6 mt-6">
-          <div className="flex gap-2 p-1 rounded-xl bg-white/5 border border-white/10 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2 p-1.5 rounded-2xl bg-white/5 border border-white/10 overflow-x-auto scrollbar-hide">
             {[
               ...(spot.is_resort ? [{ id: 'infra', label: 'Infra', icon: Warehouse }] : []),
               { id: 'insights', label: 'Insights', icon: BarChart3 },
@@ -312,130 +312,96 @@ export default function SpotDetailsView({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex-shrink-0 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                className={`flex-shrink-0 flex items-center justify-center gap-2 py-2.5 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                   activeTab === tab.id 
                     ? 'bg-accent text-dark shadow-lg shadow-accent/20' 
-                    : 'text-gray-500 hover:text-white'
+                    : 'text-gray-500 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <tab.icon size={12} className={activeTab === tab.id ? 'animate-bounce' : ''} />
+                <tab.icon size={14} />
                 {tab.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 pb-40 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto px-6 py-8 pb-40 custom-scrollbar">
           
-          {/* TAB: INSIGHTS */}
           {activeTab === 'insights' && (
             <div className="space-y-8 fade-in relative min-h-[400px]">
               
-              {/* Paywall Overlay for Free Users */}
               {(!user || user?.profile?.subscription_tier === 'free') && (
-                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center p-8 bg-[#0a0f1a]/60 backdrop-blur-md rounded-3xl border border-white/5">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-dark shadow-xl mb-6 animate-pulse">
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center p-8 bg-[#0a0f1a]/80 backdrop-blur-md rounded-3xl border border-white/5 mx-[-12px]">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-dark shadow-xl mb-6">
                     <Lock size={32} />
                   </div>
-                  <h3 className="text-xl font-black text-white uppercase tracking-tighter mb-2">Relatório de Iscas Bloqueado</h3>
-                  <p className="text-sm text-gray-400 mb-8 max-w-[240px]">
-                    Assine o plano <span className="text-accent font-bold">PRO</span> para ver quais iscas estão matando a pau neste ponto.
+                  <h3 className="text-xl font-black text-white uppercase tracking-tighter mb-2">Relatório VIP Bloqueado</h3>
+                  <p className="text-xs text-gray-400 mb-8 max-w-[240px] uppercase font-bold tracking-widest">
+                    Assine o plano <span className="text-accent">PRO</span> para ver iscas detalhadas e horários de pico.
                   </p>
                   <button 
                     onClick={() => onShowPaywall('Relatório de Iscas')}
-                    className="btn-primary py-4 px-8 text-xs font-black uppercase tracking-widest shadow-2xl shadow-accent/20"
+                    className="btn-primary py-4 px-8 text-[11px] font-black uppercase tracking-widest shadow-2xl shadow-accent/20"
                   >
-                    Liberar Insights Pro
+                    Ativar Modo Fishgada PRO
                   </button>
                 </div>
               )}
 
-              <div className={`${(!user || user?.profile?.subscription_tier === 'free') ? 'opacity-20 pointer-events-none filter blur-sm' : ''} space-y-8`}>
-                {/* KPIs de Eficiência */}
+              <div className={`${(!user || user?.profile?.subscription_tier === 'free') ? 'opacity-20 pointer-events-none filter blur-md' : ''} space-y-8`}>
                 <section>
-                  <h3 className="form-section-title mb-4">
+                  <h3 className="form-section-title mb-6">
                     <TrendingUp size={14} /> Dashboard de Eficiência
                   </h3>
                   
                   <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="card p-4 flex flex-col items-center justify-center bg-accent/5 border-accent/20">
-                      <span className="label text-[10px] text-accent">Isca Fatal</span>
-                      <span className="text-xl font-bold mt-1">
+                    <div className="glass p-5 flex flex-col items-center justify-center bg-accent/5 border-accent/20 rounded-3xl">
+                      <span className="text-[9px] font-black text-accent uppercase tracking-widest mb-2">Isca Fatal</span>
+                      <span className="text-lg font-black text-white">
                         {stats?.topLures[0]?.emoji} {stats?.topLures[0]?.label || '---'}
                       </span>
                     </div>
-                    <div className="card p-4 flex flex-col items-center justify-center">
-                      <span className="label text-[10px]">Melhor Período</span>
-                      <span className="text-xl font-bold mt-1 flex items-center gap-2">
+                    <div className="glass p-5 flex flex-col items-center justify-center rounded-3xl">
+                      <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2">Melhor Período</span>
+                      <span className="text-lg font-black text-white flex items-center gap-2">
                         <Clock size={16} className="text-amber-400" />
                         {stats?.bestPeriod ? PERIOD_LABELS[stats.bestPeriod[0]] : '---'}
                       </span>
                     </div>
                   </div>
 
-                  {/* Status Ativo (Pesqueiro) */}
                   {spot.is_resort && spot.resort_active_highlight && (
-                    <div className="glass p-5 rounded-2xl border-accent/30 bg-accent/5 mb-6 animate-pulse">
-                      <div className="flex items-center gap-3">
-                         <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent">
-                            <Fish size={20} />
+                    <div className="glass p-6 rounded-3xl border-accent/30 bg-accent/5 mb-8">
+                      <div className="flex items-center gap-4">
+                         <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center text-accent shadow-inner">
+                            <Fish size={24} />
                          </div>
                          <div>
-                            <p className="text-[10px] font-black text-accent uppercase tracking-widest">Atividade da Semana</p>
-                            <p className="text-sm font-bold text-white">{spot.resort_active_highlight}</p>
+                            <p className="text-[10px] font-black text-accent uppercase tracking-[0.2em] mb-1">Status em Tempo Real</p>
+                            <p className="text-base font-bold text-white italic">"{spot.resort_active_highlight}"</p>
                          </div>
                       </div>
                     </div>
                   )}
 
-                  {/* O que está batendo */}
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-gray-400 flex items-center gap-2">
-                       As 3 mais vitoriosas
+                  <div className="space-y-6">
+                    <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                       Iscas mais vitoriosas aqui
                     </h4>
                     {stats?.topLures.map((lure, idx) => (
-                      <div key={lure.type} className="space-y-2">
-                        <div className="flex justify-between text-xs font-bold">
-                          <span className="flex items-center gap-2">
+                      <div key={lure.type} className="space-y-3">
+                        <div className="flex justify-between text-xs font-black uppercase tracking-widest">
+                          <span className="flex items-center gap-2 text-gray-300">
                             <span className="text-lg">{lure.emoji}</span> {lure.label}
                           </span>
-                          <span className="text-accent">{lure.percent}% de sucesso</span>
+                          <span className="text-accent">{lure.percent}%</span>
                         </div>
-                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-accent rounded-full animate-grow"
-                            style={{ width: `${lure.percent}%`, animationDelay: `${idx * 150}ms` }}
+                            className="h-full bg-accent rounded-full shadow-[0_0_10px_rgba(0,212,170,0.4)]"
+                            style={{ width: `${lure.percent}%` }}
                           />
                         </div>
-                      </div>
-                    ))}
-                    {(!stats || stats.topLures.length === 0) && (
-                      <p className="text-xs text-center text-gray-500 py-4 italic">Dados insuficientes para este ponto.</p>
-                    )}
-                  </div>
-                </section>
-
-                {/* Capturas por Período */}
-                <section>
-                  <h4 className="text-sm font-bold text-gray-400 mb-4 flex items-center gap-2">
-                    <BarChart3 size={14} /> Fluxo de Capturas por Período
-                  </h4>
-                  <div className="grid grid-cols-5 gap-2 items-end h-32 pt-4">
-                    {stats?.periodStats.map((p, idx) => (
-                      <div key={p.label} className="group relative flex flex-col items-center h-full">
-                        <div className="absolute -top-6 text-[10px] font-bold text-accent opacity-0 group-hover:opacity-100 transition-opacity">
-                          {p.count}
-                        </div>
-                        <div className="flex-1 w-full bg-white/5 rounded-t-md relative overflow-hidden flex flex-col justify-end">
-                          <div 
-                            className="w-full bg-gradient-to-t from-accent/80 to-accent rounded-t-md transition-all duration-700 hover:brightness-125"
-                            style={{ height: `${p.percent}%`, transitionDelay: `${idx * 100}ms` }}
-                          />
-                        </div>
-                        <span className="text-[9px] mt-2 text-gray-500 font-bold truncate w-full text-center">
-                          {p.label}
-                        </span>
                       </div>
                     ))}
                   </div>
@@ -444,60 +410,35 @@ export default function SpotDetailsView({
             </div>
           )}
 
-          {/* TAB: FEED (Galeria) */}
           {activeTab === 'feed' && (
-            <div className="grid grid-cols-2 gap-3 fade-in">
+            <div className="grid grid-cols-2 gap-4 fade-in">
               {captures.filter(c => c.photo_url).map((cap) => (
-                <div key={cap.id} className="card overflow-hidden group relative">
-                  <div className="relative aspect-square">
-                    <img src={cap.photo_url!} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={cap.species} />
-                    
-                    {/* Botão de Like Sobreposto */}
-                    <button 
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        if (!user) return;
-                        
-                        const supabase = getSupabaseClient();
-                        if (cap.is_liked_by_user) {
-                          // Unlike
-                          await supabase.from('interactions').delete().eq('capture_id', cap.id).eq('user_id', user.id).eq('type', 'like');
-                        } else {
-                          // Like
-                          await supabase.from('interactions').insert({ capture_id: cap.id, user_id: user.id, type: 'like' } as never);
-                        }
-                        fetchSpotData(); // Recarregar para atualizar contagem
-                      }}
-                      className={`absolute top-2 right-2 w-8 h-8 rounded-full glass border border-white/10 flex items-center justify-center transition-all hover:scale-110 active:scale-90 ${cap.is_liked_by_user ? 'bg-rose-500/20 text-rose-500' : 'text-white/60'}`}
-                    >
-                      <Heart size={16} fill={cap.is_liked_by_user ? 'currentColor' : 'none'} />
-                    </button>
-
-                    <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
-                      <div className="flex items-end justify-between">
-                         <div className="min-w-0">
-                           <p className="text-xs font-black text-white truncate uppercase tracking-tighter italic">{cap.species}</p>
-                           <p className="text-[10px] text-accent font-black">
-                             {cap.weight_kg ? `${cap.weight_kg}kg` : ''} 
-                             {cap.weight_kg && cap.length_cm ? ' · ' : ''}
-                             {cap.length_cm ? `${cap.length_cm}cm` : ''}
-                           </p>
-                         </div>
-                         <div className="flex items-center gap-1 text-[10px] font-black text-gray-400">
-                           <Heart size={10} className={cap.is_liked_by_user ? 'text-rose-500 fill-rose-500' : ''} />
-                           {cap.likes_count || 0}
-                         </div>
-                      </div>
-                    </div>
+                <div 
+                  key={cap.id} 
+                  className="glass-elevated rounded-[24px] overflow-hidden group relative aspect-[4/5] cursor-pointer"
+                  onClick={() => setSelectedViewerPhoto(cap.photo_url!)}
+                >
+                  <img src={cap.photo_url!} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={cap.species} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); }}
+                    className={`absolute top-3 right-3 w-9 h-9 rounded-full glass-elevated border border-white/10 flex items-center justify-center transition-all ${cap.is_liked_by_user ? 'bg-rose-500/20 text-rose-500' : 'text-white/60'}`}
+                  >
+                    <Heart size={18} fill={cap.is_liked_by_user ? 'currentColor' : 'none'} />
+                  </button>
+                  <div className="absolute inset-x-0 bottom-0 p-4">
+                     <p className="text-xs font-black text-white truncate uppercase tracking-tighter italic">{cap.species}</p>
+                     <div className="flex justify-between items-center mt-1">
+                        <p className="text-[10px] text-accent font-black uppercase">
+                          {cap.weight_kg ? `${cap.weight_kg}kg` : '--'}
+                        </p>
+                        <div className="flex items-center gap-1 text-[10px] font-black text-white/50">
+                          <Heart size={10} /> {cap.likes_count || 0}
+                        </div>
+                     </div>
                   </div>
                 </div>
               ))}
-              {captures.filter(c => c.photo_url).length === 0 && (
-                <div className="col-span-2 py-20 text-center">
-                  <Camera size={40} className="mx-auto text-gray-700 mb-4" />
-                  <p className="text-gray-500 text-sm italic">Nenhuma foto registrada neste local.</p>
-                </div>
-              )}
             </div>
           )}
 
@@ -505,10 +446,10 @@ export default function SpotDetailsView({
           {activeTab === 'ranking' && (
             <div className="space-y-6 fade-in">
               {/* Rei do Ponto */}
-              <div className="card p-6 bg-gradient-to-br from-amber-500/10 to-transparent border-amber-500/30 relative overflow-hidden">
+              <div className="glass-elevated p-6 bg-gradient-to-br from-amber-500/10 to-transparent border-amber-500/20 rounded-3xl relative overflow-hidden shadow-xl">
                 <Trophy className="absolute -right-4 -bottom-4 w-24 h-24 text-amber-500/10 rotate-12" />
-                <h4 className="text-amber-500 text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2">
-                   Rei do Ponto
+                <h4 className="text-amber-500 text-[10px] font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                   👑 Rei do Ponto
                 </h4>
                 
                 {stats?.kingCapture ? (
@@ -525,11 +466,11 @@ export default function SpotDetailsView({
                     <div>
                       <p className="text-lg font-bold text-white">{stats.kingCapture.profiles?.display_name || 'Mestre Pescador'}</p>
                       <div className="flex items-center gap-3 mt-1">
-                        <span className="text-sm font-bold text-accent capitalize">
+                        <span className="text-sm font-black text-accent uppercase italic">
                           {stats.kingCapture.species}
                         </span>
-                        <span className="text-xs text-gray-400">
-                           recorde: <strong className="text-white">{stats.kingCapture.weight_kg}kg</strong>
+                        <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                           {stats.kingCapture.weight_kg}kg
                         </span>
                       </div>
                     </div>
@@ -541,19 +482,19 @@ export default function SpotDetailsView({
 
               {/* Top 5 Recente */}
               <div>
-                <h4 className="text-sm font-bold text-gray-400 mb-4 px-2">Top 5 Recentemente</h4>
+                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4 px-2">Top 5 Recentemente</h4>
                 <div className="space-y-3">
                   {captures.slice(0, 5).map((cap, i) => (
-                    <div key={cap.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                      <span className="w-6 text-sm font-black text-gray-600">#{i + 1}</span>
-                      <div className="flex-1">
+                    <div key={cap.id} className="flex items-center gap-3 p-4 rounded-[20px] bg-white/[0.03] border border-white/5 hover:border-accent/20 transition-all">
+                      <span className="w-6 text-xs font-black text-gray-600">#{i + 1}</span>
+                      <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-white truncate">{cap.profiles?.display_name || 'Anônimo'}</p>
-                        <p className="text-[10px] text-gray-500 capitalize">
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">
                           {cap.species} · {format(new Date(cap.captured_at), "dd MMM 'de' yy", { locale: ptBR })}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-black text-accent">{cap.weight_kg || '?'}<span className="text-[10px] ml-0.5">kg</span></p>
+                        <p className="text-sm font-black text-accent">{cap.weight_kg || '---'}<span className="text-[10px] ml-0.5">kg</span></p>
                       </div>
                     </div>
                   ))}
@@ -564,30 +505,52 @@ export default function SpotDetailsView({
 
           {/* TAB: INFRAESTRUTURA (Exclusiva Pesqueiros) */}
           {activeTab === 'infra' && spot.is_resort && (
-            <div className="space-y-8 fade-in">
+            <div className="space-y-10 fade-in">
+              
+              {(spot as any).resort_photos && (spot as any).resort_photos.length > 0 && (
+                <section>
+                  <h3 className="form-section-title mb-4">
+                    <Camera size={14} /> Galeria do Local
+                  </h3>
+                  <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 snap-x">
+                     {(spot as any).resort_photos.map((url: string, i: number) => (
+                       <div key={i} className="min-w-[280px] h-48 rounded-[32px] overflow-hidden glass-elevated border border-white/10 snap-center shadow-xl group">
+                          <img 
+                            src={url} 
+                            className="w-full h-full object-cover transition-transform group-hover:scale-105 cursor-pointer" 
+                            alt={`Ambiente ${i+1}`}
+                            onClick={() => setSelectedViewerPhoto(url)} 
+                          />
+                       </div>
+                     ))}
+                  </div>
+                  <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-3 text-center">Arraste para o lado para explorar • Clique para ampliar</p>
+                </section>
+              )}
+
               <section>
-                <h3 className="form-section-title mb-4">
+                <h3 className="form-section-title mb-6">
                   <Warehouse size={14} /> Comodidades e Serviços
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
                   {[
                     { key: 'restaurante', label: 'Restaurante', icon: Utensils },
                     { key: 'banheiros', label: 'Banheiros', icon: Warehouse },
-                    { key: 'wi_fi', label: 'Wi-Fi', icon: Wifi },
-                    { key: 'pousada', label: 'Pousada', icon: Warehouse },
+                    { key: 'wi_fi', label: 'Free Wi-Fi', icon: Wifi },
+                    { key: 'pousada', label: 'Hospedagem', icon: Warehouse },
                     { key: 'aluguel_equipamento', label: 'Aluguel Equip.', icon: Anchor },
                     { key: 'estacionamento', label: 'Estacionamento', icon: Car },
                   ].map((item) => {
                     const infra = (spot as any).resort_infrastructure || {}
                     const available = infra[item.key]
                     return (
-                      <div key={item.key} className={`card p-4 flex items-center gap-3 ${available ? 'bg-accent/5 border-accent/20' : 'opacity-40 grayscale'}`}>
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${available ? 'bg-accent/10 text-accent' : 'bg-white/5 text-gray-500'}`}>
+                      <div key={item.key} className={`glass-elevated p-5 flex items-center gap-4 rounded-3xl border transition-all ${available ? 'border-accent/30 bg-accent/[0.02]' : 'opacity-30 border-white/5'}`}>
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${available ? 'bg-accent/10 text-accent' : 'bg-white/5 text-gray-500'}`}>
                           <item.icon size={20} />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-white">{item.label}</p>
-                          <p className="text-[10px] uppercase font-black">{available ? 'Disponível' : 'Não possui'}</p>
+                          <p className="text-xs font-black text-white uppercase tracking-tight">{item.label}</p>
+                          <p className="text-[9px] uppercase font-black text-gray-500">{available ? 'Ativo' : 'N/A'}</p>
                         </div>
                       </div>
                     )
@@ -595,38 +558,30 @@ export default function SpotDetailsView({
                 </div>
               </section>
 
-              <section className="glass p-6 rounded-2xl border border-white/5 space-y-4">
-                 <h4 className="text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
-                   <Clock size={14} className="text-accent" /> Informações de Visita
-                 </h4>
-                 <div className="grid grid-cols-1 gap-4">
-                    <div className="flex justify-between items-start text-sm">
-                       <span className="text-gray-400">Horário:</span>
-                       <span className="text-white font-bold text-right max-w-[200px]">{spot.opening_hours || 'Consulte o local'}</span>
-                    </div>
-                    {spot.resort_prices && (
-                      <div className="space-y-2 border-t border-white/5 pt-3 mt-1">
-                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Tabela de Preços</p>
-                         <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-400">Entrada (Base):</span>
-                            <span className="text-accent font-black">R$ {(spot.resort_prices as any)?.entry || '--'}</span>
-                         </div>
-                         <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-400">Quilo do Peixe:</span>
-                            <span className="text-white font-bold">R$ {(spot.resort_prices as any)?.kg || '--'}</span>
-                         </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <section className="glass-elevated p-6 rounded-[32px] border border-white/5 space-y-4">
+                   <h4 className="text-white font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
+                     <Clock size={16} className="text-accent" /> Horários
+                   </h4>
+                   <p className="text-sm text-gray-300 font-medium leading-relaxed">{spot.opening_hours || 'Consulte o local via telefone.'}</p>
+                </section>
+
+                <section className="glass-elevated p-6 rounded-[32px] border border-white/5 space-y-4">
+                   <h4 className="text-accent font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
+                     <TrendingUp size={16} /> Preços Base
+                   </h4>
+                   <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Entrada:</span>
+                        <span className="text-white font-bold">R$ {(spot.resort_prices as any)?.entry || '--'}</span>
                       </div>
-                    )}
-                 </div>
-                 {spot.phone && (
-                   <button 
-                    onClick={() => window.open(`tel:${spot.phone}`)}
-                    className="btn-secondary w-full flex items-center justify-center gap-2 mt-2"
-                   >
-                      <Phone size={14} /> Ligar para Reservas
-                   </button>
-                 )}
-              </section>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Quilo:</span>
+                        <span className="text-white font-bold">R$ {(spot.resort_prices as any)?.kg || '--'}</span>
+                      </div>
+                   </div>
+                </section>
+              </div>
 
               {/* Mural de Avisos */}
               {spot.resort_notice_board && (
@@ -637,6 +592,15 @@ export default function SpotDetailsView({
                      "{spot.resort_notice_board}"
                    </p>
                 </section>
+              )}
+
+              {spot.phone && (
+                <button 
+                  onClick={() => window.open(`tel:${spot.phone}`)}
+                  className="btn-primary w-full flex items-center justify-center gap-3 py-5 rounded-[24px] shadow-2xl transition-transform active:scale-95"
+                >
+                  <Phone size={20} /> <span className="font-black tracking-widest text-xs">LIGAR PARA RESERVAS</span>
+                </button>
               )}
 
               {/* Tournament CTA */}
@@ -678,6 +642,34 @@ export default function SpotDetailsView({
           spot={spot}
           userId={userId}
         />
+      )}
+
+      {/* Full Screen Photo Viewer (Lightbox) */}
+      {selectedViewerPhoto && (
+        <div 
+          className="fixed inset-0 z-[2000] bg-black/95 flex flex-col items-center justify-center p-4 md:p-10 fade-in"
+          onClick={() => setSelectedViewerPhoto(null)}
+        >
+          <button 
+            className="absolute top-6 right-6 w-12 h-12 rounded-full glass-elevated flex items-center justify-center text-white hover:bg-white/10 transition-all z-[2001]"
+            onClick={() => setSelectedViewerPhoto(null)}
+          >
+            <X size={24} />
+          </button>
+          
+          <div className="relative max-w-full max-h-full flex items-center justify-center">
+            <img 
+              src={selectedViewerPhoto} 
+              className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl animate-scale-up" 
+              alt="Visualização"
+              onClick={(e) => e.stopPropagation()} 
+            />
+            {/* Visual cues */}
+            <div className="absolute inset-x-0 -bottom-12 flex justify-center">
+               <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em]">Toque fora para fechar</p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
 

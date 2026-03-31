@@ -1,0 +1,21 @@
+{
+  "name": "Fishgada",
+  "short_name": "Fishgada",
+  "description": "A plataforma da comunidade de pesca esportiva",
+  "start_url": "/radar",
+  "display": "standalone",
+  "background_color": "#0F172A",
+  "theme_color": "#00d4aa",
+  "icons": [
+    {
+      "src": "/images/iconapp.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/iconapp.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

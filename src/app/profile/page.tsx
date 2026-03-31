@@ -372,74 +372,118 @@ export default function ProfilePage() {
                 ))}
               </div>
 
-              {/* Sub-Tab Navigation */}
-              <div className="flex gap-4 border-b border-white/5 pb-1">
-                {[
-                  { id: 'mural', label: 'Feed/Mural', icon: Megaphone },
-                  { id: 'inscriptions', label: 'Inscrições', icon: Trophy },
-                  { id: 'achievements', label: 'Medalhas', icon: Award },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setProfileSubTab(tab.id as any)}
-                    className={`pb-3 px-1 text-[10px] font-black uppercase tracking-widest transition-all relative flex items-center gap-2 ${profileSubTab === tab.id ? 'text-accent' : 'text-gray-500 hover:text-white'}`}
-                  >
-                    <tab.icon size={14} />
-                    {tab.label}
-                    {profileSubTab === tab.id && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-accent" />}
-                  </button>
-                ))}
+              {/* Sub-Tab Navigation - Centered and aligned with Mural Feed */}
+              <div className="max-w-3xl mx-auto w-full flex justify-center md:justify-start">
+                <div className="flex gap-2 p-1.5 glass-elevated rounded-2xl border border-white/5 w-full md:w-fit overflow-x-auto no-scrollbar">
+                  {[
+                    { id: 'mural', label: 'Feed / Mural', icon: Megaphone },
+                    { id: 'inscriptions', label: 'Torneios', icon: Trophy },
+                    { id: 'achievements', label: 'Medalhas', icon: Award },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setProfileSubTab(tab.id as any)}
+                      className={`py-2.5 px-5 md:px-6 text-[10px] md:text-xs font-black uppercase tracking-widest transition-all rounded-xl flex items-center justify-center gap-2.5 flex-1 md:flex-none whitespace-nowrap ${
+                        profileSubTab === tab.id 
+                          ? 'bg-accent text-dark shadow-lg shadow-accent/20' 
+                          : 'text-gray-500 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <tab.icon size={profileSubTab === tab.id ? 16 : 14} />
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Sub-Tab Content */}
-              <div className="fade-in">
+              <div className="fade-in pt-4">
                 {profileSubTab === 'mural' && (
-                  <div className="space-y-6">
+                  <div className="max-w-3xl mx-auto space-y-8">
                     {followedResorts.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 gap-8">
                         {followedResorts.map(resort => (
-                          <div key={resort.id} className="relative glass rounded-[32px] border border-white/5 overflow-hidden flex flex-col group hover:border-accent/30 transition-all">
-                            <div className="h-20 bg-gradient-to-r from-accent/10 to-blue-500/10 relative">
-                               <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '12px 12px' }} />
-                               <div className="absolute bottom-0 left-6 translate-y-1/2">
-                                  <div className="w-12 h-12 rounded-2xl bg-slate-900 border-2 border-[#0a0f1a] flex items-center justify-center p-2 shadow-xl">
+                          <div key={resort.id} className="relative glass-elevated rounded-[40px] border border-white/5 overflow-hidden flex flex-col group hover:border-accent/20 transition-all shadow-2xl">
+                            {/* Card Header (Pesqueiro Info) */}
+                            <div className="flex items-center justify-between p-6 pb-4 border-b border-white/5">
+                               <div className="flex items-center gap-4">
+                                  <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-center p-2.5 shadow-inner">
                                      {resort.photo_url ? (
                                        <img src={resort.photo_url} className="w-full h-full object-cover rounded-lg" />
-                                     ) : <Warehouse size={20} className="text-accent" />}
+                                     ) : <Warehouse size={24} className="text-accent" />}
+                                  </div>
+                                  <div>
+                                    <h4 className="text-xl font-black text-white italic uppercase tracking-tighter">{resort.title}</h4>
+                                    <div className="flex items-center gap-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                                       <span className="flex items-center gap-1"><MapPin size={10} className="text-accent"/> {resort.water_type === 'river' ? 'Rio' : 'Lagos'}</span>
+                                       {resort.is_resort_partner && <span className="text-purple-400">◆ Parceiro Oficial</span>}
+                                    </div>
                                   </div>
                                </div>
-                            </div>
-                            <div className="p-6 pt-10 space-y-3">
-                               <div className="flex items-center justify-between">
-                                  <h4 className="text-lg font-black text-white truncate">{resort.title}</h4>
-                                  {resort.resort_active_highlight && (
-                                    <span className="text-[9px] font-black text-amber-500 uppercase bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20">
-                                      {resort.resort_active_highlight}
+                               {resort.resort_active_highlight && (
+                                 <div className="hidden md:flex flex-col items-end">
+                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">O que está batendo?</span>
+                                    <span className="text-xs font-black text-amber-400 uppercase bg-amber-400/10 px-3 py-1.5 rounded-xl border border-amber-400/20 shadow-[0_0_15px_rgba(251,191,36,0.1)]">
+                                      🔥 {resort.resort_active_highlight}
                                     </span>
-                                  )}
-                               </div>
+                                 </div>
+                               )}
+                            </div>
+
+                            {/* Main Content Area (Notice Board) */}
+                            <div className="p-8 space-y-6 relative">
+                               {/* Mural Box */}
                                {resort.resort_notice_board ? (
-                                 <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                                   <p className="text-xs text-gray-300 italic leading-relaxed">"{resort.resort_notice_board}"</p>
+                                 <div className="relative">
+                                    <div className="absolute -left-2 top-0 bottom-0 w-1 bg-accent/30 rounded-full" />
+                                    <p className="text-lg md:text-xl text-gray-200 font-medium leading-relaxed italic pl-6">
+                                      "{resort.resort_notice_board}"
+                                    </p>
                                  </div>
                                ) : (
-                                 <p className="text-[11px] text-gray-500 font-medium italic">Nenhum recado no mural ainda.</p>
-                               )}
-                               <div className="flex items-center justify-between pt-2">
-                                 <div className="flex gap-2">
-                                    {resort.resort_infrastructure?.restaurante && <Utensils size={14} className="text-gray-600" />}
-                                    {resort.resort_infrastructure?.pousada && <Warehouse size={14} className="text-gray-600" />}
+                                 <div className="py-8 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
+                                    <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Nenhum aviso no momento</p>
                                  </div>
-                                 <a href={`/radar?selectSpot=${resort.id}`} className="text-[10px] font-black uppercase text-accent hover:underline flex items-center gap-1">Ver no Mapa <ArrowRight size={12} /></a>
+                               )}
+
+                               {/* Infrastructure Shortcuts */}
+                               <div className="flex flex-wrap gap-3 pt-2">
+                                  {resort.resort_infrastructure?.restaurante && (
+                                    <div className="bg-white/5 border border-white/5 px-4 py-2 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase text-gray-400">
+                                      <Utensils size={14} className="text-accent" /> Restaurante
+                                    </div>
+                                  )}
+                                  {resort.resort_infrastructure?.pousada && (
+                                    <div className="bg-white/5 border border-white/5 px-4 py-2 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase text-gray-400">
+                                      <Warehouse size={14} className="text-accent" /> Hospedagem
+                                    </div>
+                                  )}
                                </div>
+                            </div>
+
+                            {/* Card Footer (Actions) */}
+                            <div className="px-6 py-5 bg-white/5 border-t border-white/5 flex items-center justify-between">
+                               <div className="flex gap-4">
+                                  <div className="flex flex-col">
+                                     <span className="text-[9px] font-black text-gray-600 uppercase">Capturas registradas</span>
+                                     <span className="text-sm font-black text-white">{resort.total_captures || 0}</span>
+                                  </div>
+                               </div>
+                               <a 
+                                  href={`/radar?selectSpot=${resort.id}`} 
+                                  className="px-6 py-2.5 bg-accent/10 border border-accent/30 text-accent rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-accent hover:text-dark transition-all flex items-center gap-2 group"
+                               >
+                                  Ver no Mapa <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                               </a>
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[32px]">
-                        <Megaphone size={32} className="text-gray-700 mx-auto mb-4" />
-                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Siga pesqueiros no mapa para ver as novidades aqui</p>
+                      <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[40px] bg-white/[0.02]">
+                        <Megaphone size={48} className="text-gray-700 mx-auto mb-6 opacity-50" />
+                        <h3 className="text-white font-black uppercase tracking-tighter text-xl mb-2 italic">Seu Mural está vazio</h3>
+                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest max-w-xs mx-auto">Siga pesqueiros parceiros no mapa para receber avisos e promoções em tempo real.</p>
                       </div>
                     )}
                   </div>
