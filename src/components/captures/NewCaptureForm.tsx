@@ -429,7 +429,6 @@ export default function NewCaptureForm({
                     <input 
                       type="file" 
                       accept="image/*" 
-                      capture="environment" 
                       onChange={handlePhotoSelect} 
                       style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', left: 0, top: 0, cursor: 'pointer' }}
                     />
@@ -438,7 +437,7 @@ export default function NewCaptureForm({
                         <Camera size={26} color="var(--color-text-secondary)" />
                       </div>
                       <span style={{ fontSize: 14, color: 'var(--color-text-secondary)', fontWeight: 600 }}>
-                        Tocar para abrir Câmera/Galeria
+                        Escolher Foto ou Abrir Câmera
                       </span>
                     </div>
                   </label>
@@ -457,8 +456,8 @@ export default function NewCaptureForm({
                     {/* Botões de Ação */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
                        <label className="btn-secondary" style={{ padding: '10px', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, margin: 0, cursor: 'pointer' }}>
-                         <input type="file" accept="image/*" capture="environment" onChange={handlePhotoSelect} style={{ display: 'none' }} />
-                         🔄 Trocar
+                         <input type="file" accept="image/*" onChange={handlePhotoSelect} style={{ display: 'none' }} />
+                         🔄 Trocar Foto
                        </label>
                        <button onClick={() => {setPhotoPreview(null); setPhotoFile(null)}} className="btn-secondary" style={{ padding: '10px', fontSize: 13, borderColor: '#ef444455', color: '#ef4444' }}>
                          🗑️ Remover

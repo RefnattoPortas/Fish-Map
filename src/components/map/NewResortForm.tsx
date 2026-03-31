@@ -31,6 +31,8 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
     description: '',
     opening_hours: '',
     phone: '',
+    whatsapp: '',
+    email: '',
     instagram: '',
     website: '',
     team_message: '',
@@ -43,7 +45,14 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
       estacionamento: false,
       area_kids: false,
       pesca_esportiva: false,
-      pesca_familia: false
+      pesca_familia: false,
+      whatsapp_link: false,
+      email: ''
+    },
+    opening_hours_structured: {
+      seg_sex: '07:00 às 18:00',
+      sab_dom: '06:00 às 19:00',
+      feriados: '06:00 às 19:00'
     },
     main_species: [] as string[],
     prices: {
@@ -197,6 +206,9 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
       return
     }
 
+    // Padronizar hours string
+    const hoursStr = `Seg-Sex: ${data.opening_hours_structured.seg_sex} | Sab-Dom: ${data.opening_hours_structured.sab_dom} | Fer: ${data.opening_hours_structured.feriados}`
+
     setLoading(true)
     try {
       // 1. Criar o Spot primeiro (obrigatório para ter um Resort)
@@ -225,15 +237,19 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
         .insert([{
           spot_id: spotData.id,
           owner_id: userId,
-          infrastructure: data.infra as any,
-          opening_hours: data.opening_hours || null,
+          opening_hours: hoursStr,
           prices: data.prices as any,
           phone: data.phone || null,
           instagram: data.instagram || null,
           website: data.website || null,
           is_partner: false, 
           is_active: true, // Spot visível no mapa imediatamente
-          main_species: data.main_species
+          main_species: data.main_species,
+          infrastructure: {
+            ...data.infra,
+            whatsapp: data.whatsapp,
+            email: data.email
+          } as any
         }])
 
       if (resortError) throw resortError
@@ -380,46 +396,118 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
           </div>
 
           {/* Horários e Contato */}
+          <div className="bg-white/5 p-6 rounded-3xl border border-white/10 space-y-6">
+            <h3 className="text-xs font-black text-accent uppercase tracking-widest flex items-center gap-2">
+              <Clock size={14} /> Padronização de Funcionamento
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <div>
+                <label className="label" style={{ fontSize: 10 }}>Seg a Sex</label>
+                <input 
+                  className="input" 
+                  style={{ padding: '10px' }}
+                  placeholder="07h às 18h" 
+                  value={data.opening_hours_structured.seg_sex}
+                  onChange={e => setData(d => ({ 
+                    ...d, 
+                    opening_hours_structured: { ...d.opening_hours_structured, seg_sex: e.target.value } 
+                  }))}
+                />
+              </div>
+              <div>
+                <label className="label" style={{ fontSize: 10 }}>Sáb e Dom</label>
+                <input 
+                  className="input" 
+                  style={{ padding: '10px' }}
+                  placeholder="06h às 19h" 
+                  value={data.opening_hours_structured.sab_dom}
+                  onChange={e => setData(d => ({ 
+                    ...d, 
+                    opening_hours_structured: { ...d.opening_hours_structured, sab_dom: e.target.value } 
+                  }))}
+                />
+              </div>
+              <div>
+                <label className="label" style={{ fontSize: 10 }}>Feriados</label>
+                <input 
+                  className="input" 
+                  style={{ padding: '10px' }}
+                  placeholder="Mesmo horário" 
+                  value={data.opening_hours_structured.feriados}
+                  onChange={e => setData(d => ({ 
+                    ...d, 
+                    opening_hours_structured: { ...d.opening_hours_structured, feriados: e.target.value } 
+                  }))}
+                />
+              </div>
+            </div>
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
-              <label className="label"><Clock size={14} /> Funcionamento</label>
+              <label className="label"><Phone size={14} /> Telefone Fixo</label>
               <input 
                 className="input" 
-                placeholder="Ex: Ter a Dom, 07h às 18h" 
-                value={data.opening_hours}
-                onChange={e => setData(d => ({ ...d, opening_hours: e.target.value }))}
+                placeholder="(00) 0000-0000" 
+                value={data.phone}
+                onChange={e => {
+                  let val = e.target.value.replace(/\D/g, '')
+                  if (val.length > 10) val = val.substring(0, 10)
+                  const m = val.match(/^(\d{2})(\d{4})(\d{4})$/)
+                  if (m) val = `(${m[1]}) ${m[2]}-${m[3]}`
+                  else if (val.length > 2) val = `(${val.substring(0,2)}) ${val.substring(2)}`
+                  setData(d => ({ ...d, phone: val }))
+                }}
               />
             </div>
             <div>
-              <label className="label"><Phone size={14} /> Telefone</label>
+              <label className="label" style={{ color: 'var(--color-accent-primary)' }}><MessageSquare size={14} /> WhatsApp Reserva</label>
               <input 
                 className="input" 
-                placeholder="(11) 99999-9999" 
-                value={data.phone}
-                onChange={e => setData(d => ({ ...d, phone: e.target.value }))}
+                placeholder="(00) 00000-0000" 
+                value={data.whatsapp}
+                onChange={e => {
+                  let val = e.target.value.replace(/\D/g, '')
+                  if (val.length > 11) val = val.substring(0, 11)
+                  const m = val.match(/^(\d{2})(\d{5})(\d{4})$/)
+                  if (m) val = `(${m[1]}) ${m[2]}-${m[3]}`
+                  else if (val.length > 2) val = `(${val.substring(0,2)}) ${val.substring(2)}`
+                  setData(d => ({ ...d, whatsapp: val }))
+                }}
               />
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
-              <label className="label"><Instagram size={14} /> Instagram</label>
+              <label className="label"><Globe size={14} /> Email de Contato</label>
               <input 
                 className="input" 
-                placeholder="@pesqueiro" 
+                type="email"
+                placeholder="contato@pesqueiro.com" 
+                value={data.email}
+                onChange={e => setData(d => ({ ...d, email: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="label"><Instagram size={14} /> Link Instagram</label>
+              <input 
+                className="input" 
+                placeholder="@perfil_pesqueiro" 
                 value={data.instagram}
                 onChange={e => setData(d => ({ ...d, instagram: e.target.value }))}
               />
             </div>
-            <div>
-              <label className="label"><Globe size={14} /> Website</label>
-              <input 
-                className="input" 
-                placeholder="www.pesqueiro.com" 
-                value={data.website}
-                onChange={e => setData(d => ({ ...d, website: e.target.value }))}
-              />
-            </div>
+          </div>
+
+          <div>
+             <label className="label"><Globe size={14} /> Website oficial</label>
+             <input 
+               className="input" 
+               placeholder="www.seusite.com.br" 
+               value={data.website}
+               onChange={e => setData(d => ({ ...d, website: e.target.value }))}
+             />
           </div>
 
           {/* Taxa de Entrada */}

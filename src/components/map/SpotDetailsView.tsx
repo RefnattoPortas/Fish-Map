@@ -5,7 +5,7 @@ import {
   X, MapPin, Fish, Award, Lock, Users, Eye, Star, Share2, 
   Navigation, Trophy, Wind, Thermometer, Clock, Camera,
   TrendingUp, BarChart3, Bell, BellOff, User, Calendar,
-  ArrowRight, Plus, Warehouse, Utensils, Wifi, Car, Phone, Anchor, Megaphone, ChevronRight, Heart
+  ArrowRight, Plus, Warehouse, Utensils, Wifi, Car, Phone, Anchor, Megaphone, ChevronRight, Heart, MessageSquare, Instagram
 } from 'lucide-react'
 import TrophyCardModal from '../social/TrophyCardModal'
 import type { SpotMapView, Capture, Setup, Profile } from '@/types/database'
@@ -559,11 +559,18 @@ export default function SpotDetailsView({
               </section>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <section className="glass-elevated p-6 rounded-[32px] border border-white/5 space-y-4">
+                <section className="glass-elevated p-6 rounded-[32px] border border-white/5 space-y-5">
                    <h4 className="text-white font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
-                     <Clock size={16} className="text-accent" /> Horários
+                     <Clock size={16} className="text-accent" /> Funcionamento
                    </h4>
-                   <p className="text-sm text-gray-300 font-medium leading-relaxed">{spot.opening_hours || 'Consulte o local via telefone.'}</p>
+                   <div className="space-y-3">
+                      {spot.opening_hours?.split(' | ').map((part, i) => (
+                        <div key={i} className="flex justify-between items-center text-sm border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                          <span className="text-gray-500 font-bold uppercase text-[10px]">{part.split(': ')[0]}</span>
+                          <span className="text-white font-black">{part.split(': ')[1]}</span>
+                        </div>
+                      )) || <p className="text-sm text-gray-300 font-medium leading-relaxed">Consulte o local via telefone.</p>}
+                   </div>
                 </section>
 
                 <section className="glass-elevated p-6 rounded-[32px] border border-white/5 space-y-4">
@@ -594,14 +601,84 @@ export default function SpotDetailsView({
                 </section>
               )}
 
-              {spot.phone && (
-                <button 
-                  onClick={() => window.open(`tel:${spot.phone}`)}
-                  className="btn-primary w-full flex items-center justify-center gap-3 py-5 rounded-[24px] shadow-2xl transition-transform active:scale-95"
-                >
-                  <Phone size={20} /> <span className="font-black tracking-widest text-xs">LIGAR PARA RESERVAS</span>
-                </button>
-              )}
+              <section className="space-y-4">
+                <h3 className="form-section-title mb-4">
+                  <Phone size={14} /> Contato e Reservas
+                </h3>
+                
+                <div className="grid grid-cols-1 gap-3">
+                  {spot.phone && (
+                    <div className="glass-elevated p-5 rounded-2xl flex items-center justify-between group">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white">
+                          <Phone size={18} />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-[10px] font-black text-gray-500 uppercase">Telefone</p>
+                          <p className="text-sm font-bold text-white">{spot.phone}</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => window.open(`tel:${spot.phone}`)}
+                        className="btn-secondary px-4 py-2 text-[10px] font-black rounded-xl"
+                      >
+                        LIGAR
+                      </button>
+                    </div>
+                  )}
+
+                  {/* WhatsApp (extraído da infra ou do telefone) */}
+                  {((spot as any).resort_infrastructure?.whatsapp || spot.phone) && (
+                    <button 
+                      onClick={() => {
+                        const zap = (spot as any).resort_infrastructure?.whatsapp || spot.phone
+                        const cleanZap = zap?.replace(/\D/g, '')
+                        window.open(`https://wa.me/55${cleanZap}`, '_blank')
+                      }}
+                      className="w-full flex items-center justify-between p-5 rounded-2xl bg-[#25D366]/10 border border-[#25D366]/20 hover:bg-[#25D366]/20 transition-all group"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-[#25D366] text-dark flex items-center justify-center">
+                          <MessageSquare size={18} fill="currentColor" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-[10px] font-black text-[#25D366] uppercase">WhatsApp</p>
+                          <p className="text-sm font-black text-white">Chamar para Reservas</p>
+                        </div>
+                      </div>
+                      <ChevronRight size={18} className="text-[#25D366]" />
+                    </button>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {spot.instagram && (
+                      <button 
+                        onClick={() => {
+                          const handle = spot.instagram?.replace('@', '')
+                          window.open(`https://instagram.com/${handle}`, '_blank')
+                        }}
+                        className="flex items-center gap-3 p-4 rounded-2xl glass-elevated border border-white/10 hover:bg-white/5 transition-all"
+                      >
+                        <Instagram size={18} className="text-rose-400" />
+                        <span className="text-[10px] font-black uppercase text-white">Instagram</span>
+                      </button>
+                    )}
+
+                    {((spot as any).resort_infrastructure?.email || spot.website?.includes('@')) && (
+                      <button 
+                        onClick={() => {
+                          const email = (spot as any).resort_infrastructure?.email || spot.website
+                          window.open(`mailto:${email}`, '_blank')
+                        }}
+                        className="flex items-center gap-3 p-4 rounded-2xl glass-elevated border border-white/10 hover:bg-white/5 transition-all"
+                      >
+                        <Bell size={18} className="text-blue-400" />
+                        <span className="text-[10px] font-black uppercase text-white">E-mail</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </section>
 
               {/* Tournament CTA */}
               {spot.open_tournaments_count > 0 && (

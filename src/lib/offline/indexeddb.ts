@@ -74,28 +74,76 @@ interface FishgadaOfflineDB {
       cached_at: string
     }
   }
+  // Cache de tiles do mapa para uso offline
+  map_tiles: {
+    key: string // "theme/z/x/y"
+    value: {
+      id: string    // "theme/z/x/y"
+      theme: string
+      z: number
+      x: number
+      y: number
+      blob: Blob
+      cached_at: string
+    }
+  }
+  // Registro de regiões baixadas pelo usuário
+  map_regions: {
+    key: string
+    value: {
+      id: string
+      name: string
+      center_lat: number
+      center_lng: number
+      north: number
+      south: number
+      east: number
+      west: number
+      min_zoom: number
+      max_zoom: number
+      tile_count: number
+      size_mb: number
+      created_at: string
+    }
+  }
 }
 
 let db: IDBPDatabase<FishgadaOfflineDB> | null = null
 
 export async function getOfflineDB(): Promise<IDBPDatabase<FishgadaOfflineDB>> {
   if (!db) {
-    db = await openDB<FishgadaOfflineDB>('fishgada-offline', 1, {
+    db = await openDB<FishgadaOfflineDB>('fishgada-offline', 2, {
       upgrade(database) {
         // Store de spots pendentes
-        const spotsStore = database.createObjectStore('pending_spots', {
-          keyPath: 'id',
-        })
-        spotsStore.createIndex('by-synced', 'synced')
+        if (!database.objectStoreNames.contains('pending_spots')) {
+          const spotsStore = database.createObjectStore('pending_spots', {
+            keyPath: 'id',
+          })
+          spotsStore.createIndex('by-synced', 'synced')
+        }
 
         // Store de capturas pendentes
-        const capturesStore = database.createObjectStore('pending_captures', {
-          keyPath: 'id',
-        })
-        capturesStore.createIndex('by-synced', 'synced')
+        if (!database.objectStoreNames.contains('pending_captures')) {
+          const capturesStore = database.createObjectStore('pending_captures', {
+            keyPath: 'id',
+          })
+          capturesStore.createIndex('by-synced', 'synced')
+        }
 
         // Cache de spots para visualização offline
-        database.createObjectStore('spots_cache', { keyPath: 'id' })
+        if (!database.objectStoreNames.contains('spots_cache')) {
+          database.createObjectStore('spots_cache', { keyPath: 'id' })
+        }
+
+        // Cache de tiles do mapa
+        if (!database.objectStoreNames.contains('map_tiles')) {
+          database.createObjectStore('map_tiles', { keyPath: 'id' })
+        }
+
+        // Registro de regiões baixadas
+        if (!database.objectStoreNames.contains('map_regions')) {
+          database.createObjectStore('map_regions', { keyPath: 'id' })
+        }
       },
     })
   }
@@ -314,6 +362,35 @@ export async function getPendingCount(): Promise<number> {
   return spots.length + captures.length
 }
 
+// ─── MAP TILES & REGIONS ───────────────────────────────────────
+
+export async function saveTile(tile: FishgadaOfflineDB['map_tiles']['value']) {
+  const database = await getOfflineDB()
+  await database.put('map_tiles', tile)
+}
+
+export async function getTile(id: string) {
+  const database = await getOfflineDB()
+  return database.get('map_tiles', id)
+}
+
+export async function saveMapRegion(region: FishgadaOfflineDB['map_regions']['value']) {
+  const database = await getOfflineDB()
+  await database.put('map_regions', region)
+}
+
+export async function getMapRegions() {
+  const database = await getOfflineDB()
+  return database.getAll('map_regions')
+}
+
+export async function deleteMapRegion(id: string) {
+  const database = await getOfflineDB()
+  // Poderíamos opcionalmente deletar as tiles dessa região, mas geralmente o cache de tiles é compartilhado
+  // Para simplificar, deletamos apenas o registro da região nesta versão.
+  await database.delete('map_regions', id)
+}
+
 // ─── LIMPEZA DO INDEXEDDB ─────────────────────────────────────
 
 /** Remove todos os dados pendentes do IndexedDB (útil para reset/testes) */
@@ -323,6 +400,8 @@ export async function clearAllPendingData() {
     database.clear('pending_spots'),
     database.clear('pending_captures'),
     database.clear('spots_cache'),
+    database.clear('map_tiles'),
+    database.clear('map_regions'),
   ])
   console.log('[Offline] IndexedDB limpo com sucesso.')
 }

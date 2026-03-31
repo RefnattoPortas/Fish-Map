@@ -12,6 +12,8 @@ import { Plus, RefreshCw, MapPin, Warehouse, Flame, Download, Info, Fish, Store 
 import type { ResortHighlight } from '@/components/map/MapFiltersBar'
 import PaywallModal from '@/components/common/PaywallModal'
 import WelcomeOverlay from '@/components/common/WelcomeOverlay'
+import PwaInstallOverlay from '@/components/common/PwaInstallOverlay'
+import DownloadMapModal from '@/components/common/DownloadMapModal'
 import LandingPage from '@/components/landing/LandingPage'
 
 // Importação dinâmica do mapa (evita erro de SSR com Leaflet)
@@ -88,8 +90,11 @@ function HomeContent() {
   const [showPaywall, setShowPaywall] = useState(false)
   const [paywallFeature, setPaywallFeature] = useState('')
   const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('light')
-  const [mapBounds, setMapBounds] = useState<{ north: number, south: number, east: number, west: number } | null>(null)
+  const [mapBounds, setMapBounds] = useState({ north: 0, south: 0, east: 0, west: 0 })
+  const [downloadCenter, setDownloadCenter] = useState<[number, number] | null>(null)
   const [showWelcome, setShowWelcome] = useState(false)
+  const [showPwaPrompt, setShowPwaPrompt] = useState(false)
+  const [showDownloadModal, setShowDownloadModal] = useState(false)
 
   // Ler tema local do mapa
   useEffect(() => {
@@ -111,7 +116,16 @@ function HomeContent() {
           .eq('id', user.id)
           .single()
         setUser({ ...user, profile: profile as any })
-        if ((profile as any)?.is_first_login) setShowWelcome(true)
+        
+        // PWA and Welcome Logic
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true
+        const hasBeenPrompted = localStorage.getItem('fishgada_pwa_prompt_dismissed') === 'true'
+        
+        if ((profile as any)?.is_first_login) {
+          setShowWelcome(true)
+        } else if (!isStandalone && !hasBeenPrompted) {
+          setShowPwaPrompt(true)
+        }
       } else {
         setUser(null)
       }
@@ -124,7 +138,16 @@ function HomeContent() {
             .eq('id', session.user.id)
             .single()
           setUser({ ...session.user, profile: profile as any })
-          if ((profile as any)?.is_first_login) setShowWelcome(true)
+          
+          // PWA and Welcome Logic
+          const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true
+          const hasBeenPrompted = localStorage.getItem('fishgada_pwa_prompt_dismissed') === 'true'
+          
+          if ((profile as any)?.is_first_login) {
+            setShowWelcome(true)
+          } else if (!isStandalone && !hasBeenPrompted) {
+            setShowPwaPrompt(true)
+          }
         } else {
           setUser(null)
         }
@@ -387,6 +410,10 @@ function HomeContent() {
                 filterLureType={filters.lureType}
                 theme={mapTheme}
                 onBoundsChange={setMapBounds}
+                downloadPreview={showDownloadModal ? {
+                  center: downloadCenter || [ -15.78, -47.92 ], // Fallback default
+                  onCenterChange: setDownloadCenter
+                } : undefined}
               />
 
         {creationMode && (
@@ -437,7 +464,13 @@ function HomeContent() {
                 setPaywallFeature('Mapas Offline')
                 setShowPaywall(true)
               } else {
-                alert('Iniciando download do mapa offline...')
+                // Ao abrir o modal, inicializa o centro do download no centro atual do mapa se for a primeira vez
+                if (!downloadCenter) {
+                  const centerLat = mapBounds.north !== 0 ? (mapBounds.north + mapBounds.south) / 2 : -15.7801
+                  const centerLng = mapBounds.east !== 0 ? (mapBounds.east + mapBounds.west) / 2 : -47.9292
+                  setDownloadCenter([centerLat, centerLng])
+                }
+                setShowDownloadModal(true)
               }
             }}
             style={{
@@ -570,7 +603,26 @@ function HomeContent() {
             setShowWelcome(false)
             // Atualizar o state do usuário localmente também
             setUser((prev: any) => prev ? { ...prev, profile: { ...prev.profile, is_first_login: false } } : null)
+            
+            // Depois do Welcome, se não for standalone, mostra o prompt do PWA
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true
+            const hasBeenPrompted = localStorage.getItem('fishgada_pwa_prompt_dismissed') === 'true'
+            if (!isStandalone && !hasBeenPrompted) {
+              setShowPwaPrompt(true)
+            }
           }} 
+        />
+      )}
+
+      {showPwaPrompt && (
+        <PwaInstallOverlay onClose={() => setShowPwaPrompt(false)} />
+      )}
+
+      {showDownloadModal && (
+        <DownloadMapModal 
+          onClose={() => setShowDownloadModal(false)}
+          center={downloadCenter || [0,0]}
+          mapTheme={mapTheme}
         />
       )}
     </div>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { Navigation, HelpCircle } from 'lucide-react'
 import type { SpotMapView } from '@/types/database'
 import type { Map as LeafletMap, LatLngExpression } from 'leaflet'
+import { getTile } from '@/lib/offline/indexeddb'
 
 // Labels amigáveis para tipos de isca
 const LURE_LABELS: Record<string, string> = {
@@ -37,6 +38,7 @@ interface FishingMapProps {
   onMapClick?: (lat: number, lng: number) => void
   theme?: 'dark' | 'light'
   onBoundsChange?: (bounds: { north: number, south: number, east: number, west: number }) => void
+  downloadPreview?: { center: [number, number], onCenterChange: (center: [number, number]) => void }
 }
 
 const DEFAULT_CENTER: [number, number] = [-15.7801, -47.9292]
@@ -54,10 +56,12 @@ export default function FishingMap({
   onMapClick,
   theme = 'light',
   onBoundsChange,
+  downloadPreview,
 }: FishingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletMapRef = useRef<LeafletMap | null>(null)
   const markersRef = useRef<any[]>([])
+  const downloadPreviewRef = useRef<any>(null)
   const [isLoaded, setIsLoaded] = useState(false)
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const isInitializingRef = useRef(false)
@@ -121,7 +125,49 @@ export default function FishingMap({
           ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
           : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
 
-        const baseLayer = L.tileLayer(tileUrl, { maxZoom: 19, subdomains: 'abcd' })
+        // Camada que suporta offline
+        const OfflineLayer = L.TileLayer.extend({
+          createTile: function(coords: any, done: any) {
+            const tile = document.createElement('img')
+            tile.setAttribute('role', 'presentation')
+
+            // Captura os valores SINCRONAMENTE antes de qualquer async
+            if (!coords || typeof coords.z !== 'number' || isNaN(coords.z) || isNaN(coords.x) || isNaN(coords.y)) {
+              return tile
+            }
+
+            const id = `${theme}/${coords.z}/${coords.x}/${coords.y}`
+            // Gera a URL online agora (síncrono), antes do gap async
+            let onlineUrl = ''
+            try {
+              onlineUrl = this.getTileUrl(coords)
+            } catch (_) {
+              return tile
+            }
+            if (!onlineUrl || onlineUrl.includes('NaN')) return tile
+            
+            getTile(id).then(cached => {
+              if (cached && cached.blob) {
+                const url = URL.createObjectURL(cached.blob)
+                tile.src = url
+                tile.onload = () => { this._tileOnLoad(done, tile) }
+                tile.onerror = () => { tile.src = onlineUrl }
+              } else {
+                tile.src = onlineUrl
+                L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile))
+                L.DomEvent.on(tile, 'error', L.Util.bind(this._tileOnError, this, done, tile))
+              }
+            }).catch(() => {
+              tile.src = onlineUrl
+              L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile))
+              L.DomEvent.on(tile, 'error', L.Util.bind(this._tileOnError, this, done, tile))
+            })
+            
+            return tile
+          }
+        })
+
+        const baseLayer = new (OfflineLayer as any)(tileUrl, { maxZoom: 19, subdomains: 'abcd' })
         baseLayer.addTo(mapInstance)
         ;(mapInstance as any)._baseLayer = baseLayer
 
@@ -150,7 +196,10 @@ export default function FishingMap({
 
         mapInstance.on('moveend', emitBounds)
         mapInstance.on('zoomend', emitBounds)
-        timeoutId = setTimeout(emitBounds, 500)
+        timeoutId = setTimeout(() => {
+          mapInstance?.invalidateSize()
+          emitBounds()
+        }, 500)
 
         leafletMapRef.current = mapInstance
         setIsLoaded(true)
@@ -189,7 +238,55 @@ export default function FishingMap({
     if (oldLayer) map.removeLayer(oldLayer)
 
     import('leaflet').then(L => {
-      const newLayer = L.default.tileLayer(tileUrl, { maxZoom: 19, subdomains: 'abcd' }).addTo(map)
+      // Re-implementar a camada offline ao trocar o tema
+      const OfflineLayer = L.default.TileLayer.extend({
+        createTile: function(coords: any, done: any) {
+          const tile = document.createElement('img')
+          tile.setAttribute('role', 'presentation')
+
+          if (!coords || typeof coords.z !== 'number' || isNaN(coords.z) || isNaN(coords.x) || isNaN(coords.y)) {
+            return tile
+          }
+
+          const id = `${theme}/${coords.z}/${coords.x}/${coords.y}`
+          let onlineUrl = ''
+          try {
+            onlineUrl = this.getTileUrl(coords)
+          } catch (_) {
+            return tile
+          }
+          if (!onlineUrl || onlineUrl.includes('NaN')) return tile
+          
+          getTile(id).then(cached => {
+            if (cached && cached.blob) {
+              const url = URL.createObjectURL(cached.blob)
+              tile.src = url
+              tile.onload = () => { this._tileOnLoad(done, tile) }
+              tile.onerror = () => { tile.src = onlineUrl }
+            } else {
+              tile.src = onlineUrl
+              L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile))
+              L.DomEvent.on(tile, 'error', L.Util.bind(this._tileOnError, this, done, tile))
+            }
+          }).catch(() => {
+            tile.src = onlineUrl
+            L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile))
+            L.DomEvent.on(tile, 'error', L.Util.bind(this._tileOnError, this, done, tile))
+          })
+          
+          return tile
+        }
+      })
+
+      const newLayer = new (OfflineLayer as any)(tileUrl, { maxZoom: 19, subdomains: 'abcd' })
+      
+      const originalGetTileUrl = newLayer.getTileUrl
+      newLayer.getTileUrl = function(coords: any) {
+        if (!coords || isNaN(coords.z)) return ''
+        return originalGetTileUrl.call(this, coords)
+      }
+      
+      newLayer.addTo(map)
       ;(map as any)._baseLayer = newLayer
     })
 
@@ -415,6 +512,78 @@ export default function FishingMap({
     renderMarkers()
   }, [spots, isLoaded, selectedSpotId, filterLureType, onSpotSelect])
 
+  // Gerenciar camada de preview do download (Círculo de 50km)
+  useEffect(() => {
+    if (!leafletMapRef.current || !isLoaded) return
+    const map = leafletMapRef.current
+
+    // Limpeza anterior
+    if (downloadPreviewRef.current) {
+       downloadPreviewRef.current.marker.remove()
+       downloadPreviewRef.current.circle.remove()
+       downloadPreviewRef.current = null
+    }
+
+    if (!downloadPreview) return
+
+    import('leaflet').then(L => {
+      const center = downloadPreview.center
+      
+      const marker = L.default.marker(center as LatLngExpression, { 
+        draggable: true,
+        zIndexOffset: 1000,
+        icon: L.default.divIcon({
+          className: '',
+          html: `
+            <div style="
+              width: 44px; height: 44px; 
+              background: #00d4aa; 
+              border: 4px solid white; 
+              border-radius: 50%; 
+              display: flex; align-items: center; justify-center; 
+              box-shadow: 0 0 30px rgba(0,212,170,0.6);
+            ">
+               <div style="margin: auto;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+               </div>
+            </div>
+          `,
+          iconSize: [44, 44],
+          iconAnchor: [22, 22]
+        })
+      }).addTo(map)
+
+      const circle = L.default.circle(center as LatLngExpression, {
+        radius: 50000, // 50km
+        color: '#00d4aa',
+        fillColor: '#00d4aa',
+        fillOpacity: 0.15,
+        weight: 2,
+        dashArray: '10, 10',
+        interactive: false
+      }).addTo(map)
+
+      marker.on('drag', (e) => {
+        circle.setLatLng(e.target.getLatLng())
+      })
+
+      marker.on('dragend', (e) => {
+        const newPos = e.target.getLatLng()
+        downloadPreview.onCenterChange([newPos.lat, newPos.lng])
+      })
+
+      downloadPreviewRef.current = { marker, circle }
+    })
+
+    return () => {
+      if (downloadPreviewRef.current) {
+        downloadPreviewRef.current.marker.remove()
+        downloadPreviewRef.current.circle.remove()
+        downloadPreviewRef.current = null
+      }
+    }
+  }, [downloadPreview, isLoaded])
+
   const handleFindMe = () => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -504,6 +673,18 @@ export default function FishingMap({
                 </div>
              </div>
           </div>
+ 
+           {/* Download Preview Overlay */}
+           {downloadPreview && (
+             <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="bg-[#00d4aa] text-[#0a0f1a] px-5 py-2.5 rounded-full shadow-[0_0_40px_rgba(0,212,170,0.4)] flex items-center gap-3 border-2 border-white">
+                  <div className="w-2 h-2 bg-[#0a0f1a] rounded-full animate-ping" />
+                  <p className="text-xs font-black uppercase tracking-widest italic leading-none">
+                    Arraste o marcador para selecionar a área de 50km
+                  </p>
+                </div>
+             </div>
+           )}
 
           {/* Zoom Controls (à direita da legenda) */}
           <div className="flex flex-col gap-2">

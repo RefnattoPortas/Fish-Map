@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Sidebar from '@/components/layout/Sidebar'
-import { Settings, User, Bell, Shield, LogOut, Save, Camera, CheckCircle2, Map as MapIcon, Moon, Sun } from 'lucide-react'
+import { Settings, User, Bell, Shield, LogOut, Save, Camera, CheckCircle2, Map as MapIcon, Moon, Sun, Download, Trash2, Globe } from 'lucide-react'
 import { getSupabaseClient } from '@/lib/supabase/client'
+import { getMapRegions, deleteMapRegion } from '@/lib/offline/indexeddb'
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null)
@@ -18,12 +19,30 @@ export default function SettingsPage() {
   const [showSuccess, setShowSuccess] = useState(false)
   const [activeTab, setActiveTab] = useState('Perfil')
   const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('light')
+  const [mapRegions, setMapRegions] = useState<any[]>([])
 
   useEffect(() => {
     fetchProfile()
+    fetchMapRegions()
     const savedMapTheme = localStorage.getItem('fishgada_map_theme') as 'dark' | 'light'
     if (savedMapTheme) setMapTheme(savedMapTheme)
   }, [])
+
+  const fetchMapRegions = async () => {
+    try {
+      const regions = await getMapRegions()
+      setMapRegions(regions)
+    } catch (err) {
+      console.error('Erro ao buscar regiões de mapa:', err)
+    }
+  }
+
+  const handleDeleteRegion = async (id: string) => {
+    if (confirm('Tem certeza que deseja remover este mapa offline?')) {
+      await deleteMapRegion(id)
+      fetchMapRegions()
+    }
+  }
 
   const fetchProfile = async () => {
     const supabase = getSupabaseClient()
@@ -105,6 +124,7 @@ export default function SettingsPage() {
                 { label: 'Perfil', icon: User },
                 { label: 'Notificações', icon: Bell },
                 { label: 'Mapa & Visual', icon: MapIcon },
+                { label: 'Mapas Baixados', icon: Download },
                 { label: 'Privacidade', icon: Shield },
               ].map((item) => (
                 <button
@@ -291,6 +311,60 @@ export default function SettingsPage() {
                            {mapTheme === 'dark' && <CheckCircle2 size={16} />}
                         </button>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'Mapas Baixados' && (
+                <div className="glass-elevated p-8 rounded-[32px] border border-white/5 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-[60px] rounded-full -mr-16 -mt-16" />
+                  <h3 className="text-white font-black text-lg uppercase tracking-tighter mb-8 flex items-center gap-2">
+                    <Download size={20} className="text-accent" /> Mapas Baixados
+                  </h3>
+                  
+                  <div className="space-y-6">
+                    {mapRegions.length === 0 ? (
+                      <div className="text-center py-12 space-y-4">
+                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto border border-white/10">
+                          <Globe className="text-gray-600" size={32} />
+                        </div>
+                        <div>
+                          <p className="text-white font-bold">Nenhum mapa baixado</p>
+                          <p className="text-gray-500 text-xs">Aproveite para baixar regiões e pescar em locais sem sinal de internet.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-4">
+                        {mapRegions.map((region) => (
+                          <div key={region.id} className="p-5 rounded-[24px] bg-white/5 border border-white/10 flex items-center justify-between group hover:border-accent/30 transition-all">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center text-accent">
+                                <MapIcon size={24} />
+                              </div>
+                              <div>
+                                <h4 className="text-white font-black text-sm uppercase tracking-tight">{region.name}</h4>
+                                <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mt-1">
+                                  {region.tile_count} Tiles • {region.size_mb.toFixed(1)} MB
+                                </p>
+                              </div>
+                            </div>
+                            <button 
+                              onClick={() => handleDeleteRegion(region.id)}
+                              className="p-3 text-gray-500 hover:text-red-500 transition-colors"
+                              title="Remover Mapa"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="pt-6 border-t border-white/10">
+                      <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest text-center">
+                        Para baixar novos mapas, utilize o botão de Download diretamente na tela do Radar.
+                      </p>
                     </div>
                   </div>
                 </div>

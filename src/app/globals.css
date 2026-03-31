@@ -544,4 +544,9 @@
   
   .rotate-y-12 { transform: rotateY(12deg); }
   .rotate-y-12-neg { transform: rotateY(-12deg); }
+
+  @keyframes wave {
+    0%, 100% { transform: translateX(0) translateY(0); }
+    50% { transform: translateX(-5%) translateY(2%); }
+  }
 }

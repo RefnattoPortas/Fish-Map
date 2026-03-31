@@ -314,6 +314,8 @@ export interface Database {
           phone: string | null; 
           is_partner: boolean; 
           is_active: boolean;
+          is_founder_partner: boolean | null;
+          active_until: string | null;
           active_highlight: string | null;
           notice_board: string | null;
           photos: string[] | null;
