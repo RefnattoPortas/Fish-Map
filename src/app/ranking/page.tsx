@@ -72,7 +72,7 @@ export default function RankingPage() {
       // 1. Garantir que temos os dados do próprio usuário atualizados
       let myProfile = me
       if (currentUser) {
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single()
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', currentUser.id).maybeSingle()
         if (profile) {
           myProfile = profile as any
           setMe(myProfile)
@@ -126,7 +126,7 @@ export default function RankingPage() {
       <Sidebar />
       
       <main className="flex-1 flex flex-col h-full overflow-hidden p-4 md:p-8">
-        <div className="max-w-5xl mx-auto w-full flex flex-col h-full gap-6 fade-in">
+        <div className="max-w-5xl mx-auto w-full flex flex-col h-full gap-6 fade-in pt-12 md:pt-0">
           
           {/* Header */}
           <header className="flex flex-col items-center text-center gap-2 flex-shrink-0">
@@ -237,32 +237,6 @@ export default function RankingPage() {
                   <div className="text-center py-20 text-gray-600 uppercase font-black text-xs">Ninguém encontrado neste ranking</div>
                 )}
              </div>
-
-             {/* Sticky Card for current user IF rank > 500 */}
-             {!isMeInTop500 && !isLoading && currentUser && me && (
-               <div className="mt-4 pt-4 border-t border-white/10 animate-in slide-in-from-bottom duration-500">
-                  <div className="bg-accent text-black p-5 rounded-3xl flex items-center gap-4 shadow-[0_0_30px_rgba(0,212,170,0.3)]">
-                      <div className="w-10 md:w-12 text-center">
-                        <span className="text-lg font-black">#{myRank || '...'}</span>
-                      </div>
-                      <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden border-2 border-black/20 flex-shrink-0">
-                        {me.avatar_url ? (
-                          <img src={me.avatar_url} className="w-full h-full object-cover" />
-                        ) : <User className="w-full h-full p-3 text-black/40" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                         <h4 className="text-sm md:text-base font-black uppercase tracking-tight truncate">
-                            {me.display_name || me.username}
-                         </h4>
-                         <p className="text-[10px] font-bold uppercase tracking-wider">Sua posição atual no ranking</p>
-                      </div>
-                      <div className="flex flex-col items-end pr-2">
-                        <span className="text-[9px] font-black uppercase tracking-tighter">Curtidas</span>
-                        <span className="text-base md:text-lg font-black">{me.total_likes?.toLocaleString() || 0}</span>
-                      </div>
-                  </div>
-               </div>
-             )}
           </div>
         </div>
       </main>

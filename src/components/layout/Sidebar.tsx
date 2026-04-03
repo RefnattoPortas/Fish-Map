@@ -1,12 +1,10 @@
-'use client'
-
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import {
   Map, Fish, BookOpen, Trophy, User, Settings,
   ChevronRight, Wifi, WifiOff, Plus, Bell, LogOut,
-  LogIn, Award, Crown, Store, Building, Menu, X, Compass
+  LogIn, Award, Crown, Store, Building, Menu, X, Compass, Users
 } from 'lucide-react'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import B2BLanding from '@/components/partners/B2BLanding'
@@ -53,7 +51,7 @@ export default function Sidebar({
         .from('profiles')
         .select('*')
         .eq('id', uid)
-        .single()
+        .maybeSingle()
       setProfile(data)
     }
 
@@ -65,7 +63,6 @@ export default function Sidebar({
 
     // Listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      // Proteção: Algumas versões da sessão no localStorage podem vir como string
       const safeSession = (session && typeof session === 'object') ? session : null
       
       setUser(safeSession?.user ?? null)
@@ -95,10 +92,7 @@ export default function Sidebar({
   }, [])
 
   const userLevel = profile?.level || 1
-  const userXP = profile?.xp_points || 0
   const userRank = getRankByLevel(userLevel)
-  const xpForNextLevel = userLevel * 500
-  const xpProgress = Math.min((userXP % 500) / 500 * 100, 100)
 
   const showDefaultMobileButton = pathname !== '/' && pathname !== '/radar'
 
@@ -114,13 +108,9 @@ export default function Sidebar({
     }
   }, [isOpenMobile])
 
-  const trialDaysLeft = profile?.trial_ends_at 
-    ? Math.max(0, Math.ceil((new Date(profile.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-    : 0;
-
   return (
     <>
-      {/* Mobile Toggle Button (Hidden on Map page to use custom embedded button instead) */}
+      {/* Mobile Toggle Button */}
       {showDefaultMobileButton && (
         <button 
           onClick={() => setIsOpenMobile(!isOpenMobile)}
@@ -148,7 +138,6 @@ export default function Sidebar({
           minWidth: expanded ? 'var(--sidebar-expanded)' : 'var(--sidebar-width)',
         }}
       >
-      {/* Botão de expandir (chevron) - Fora do container de scroll para ficar visível */}
       <button
         onClick={() => setExpanded(!expanded)}
         className="absolute hidden md:flex items-center justify-center cursor-pointer z-10 transition-transform duration-300"
@@ -160,12 +149,10 @@ export default function Sidebar({
           borderRadius: 6,
           transform: expanded ? 'rotate(180deg)' : 'none',
         }}
-        title={expanded ? 'Recolher' : 'Expandir'}
       >
         <ChevronRight size={14} color="var(--color-text-secondary)" />
       </button>
 
-      {/* Container de Conteúdo com Scroll Interno */}
       <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden h-full scrollbar-none">
         {/* Logo */}
         <div className={`flex items-center justify-center p-0 mb-2 mt-[20px] transition-all duration-300 
@@ -187,112 +174,54 @@ export default function Sidebar({
           </Link>
         </div>
 
-        {/* User Profile Section */}
-        {user && (
-          <div className={`px-2 mb-4 transition-all ${expanded ? 'mt-2' : 'mt-0'}`}>
-            <div className={`flex items-center gap-3 p-2 rounded-2xl transition-all ${expanded ? 'bg-white/[0.03] border border-white/5' : ''}`}>
-               <Link href="/profile" className="relative flex-shrink-0 group">
-                <div 
-                  className="rounded-xl overflow-hidden glow-accent-small transition-transform group-hover:scale-105"
-                  style={{ 
-                    width: expanded ? 48 : 36, 
-                    height: expanded ? 48 : 36, 
-                    border: profile?.subscription_tier === 'partner'
-                        ? '2px solid #a855f7'
-                        : (profile?.subscription_tier === 'pro' || trialDaysLeft > 0)
-                        ? '2px solid #fbbf24'
-                        : '2px solid var(--color-accent-primary)' 
-                  }}
-                >
+        {/* User Profile Section - Simple & Compact */}
+        <div className={`px-2 mb-4 transition-all ${expanded ? 'mt-2' : 'mt-0'}`}>
+          {user ? (
+            <Link href="/profile" className={`flex items-center gap-3 p-2 rounded-2xl transition-all hover:bg-white/5 border border-transparent ${expanded ? 'bg-white/[0.03] border-white/5' : ''}`}>
+              <div 
+                className="relative flex-shrink-0"
+                style={{ width: expanded ? 42 : 36, height: expanded ? 42 : 36 }}
+              >
+                <div className="w-full h-full rounded-xl overflow-hidden border border-white/10 glow-accent-small">
                   {user.user_metadata.avatar_url ? (
                     <img src={user.user_metadata.avatar_url} alt="User" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-                      <User size={expanded ? 24 : 18} className="text-gray-400" />
+                      <User size={expanded ? 20 : 18} className="text-gray-400" />
                     </div>
                   )}
                 </div>
-                {(profile?.subscription_tier === 'pro' || trialDaysLeft > 0) && (
-                  <div className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center border-2 border-[#0a0f1a] shadow-lg animate-bounce z-10">
-                    <Crown size={10} className="text-dark fill-dark" />
-                  </div>
-                )}
-                {profile?.subscription_tier === 'partner' && (
-                  <div className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center border-2 border-[#0a0f1a] shadow-lg animate-bounce z-10">
-                    <Crown size={10} className="text-white fill-white" />
-                  </div>
-                )}
                 <div 
-                  className="absolute -bottom-1 -right-1 text-[#000] text-[9px] font-black px-1.5 py-0.5 rounded-md border border-[#0a0f1a] shadow-lg"
+                  className="absolute -bottom-1 -right-1 text-[#000] text-[8px] font-black px-1 py-0.5 rounded-md border border-[#0a0f1a] shadow-lg"
                   style={{ backgroundColor: userRank.color }}
                 >
-                  L{userLevel}
+                  {userLevel}
                 </div>
-              </Link>
+              </div>
               
               {expanded && (
                 <div className="fade-in flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <userRank.icon size={12} style={{ color: userRank.color }} />
-                      <span 
-                        className="text-[9px] font-black uppercase tracking-widest whitespace-nowrap"
-                        style={{ color: userRank.color }}
-                      >
-                        {userRank.title}
-                      </span>
-                    </div>
-                    
-                    {/* Badge de Assinatura */}
-                    {(profile?.subscription_tier === 'pro' || trialDaysLeft > 0) && (
-                      <span className="text-[8px] font-black bg-amber-500 text-dark px-1.5 py-0.5 rounded-md shadow-lg shadow-amber-500/20 animate-pulse">
-                        {trialDaysLeft > 0 && !profile?.subscription_tier ? 'TRIAL' : 'PRO'}
-                      </span>
-                    )}
-                    {profile?.subscription_tier === 'partner' && (
-                      <span className="text-[8px] font-black bg-purple-500 text-white px-1.5 py-0.5 rounded-md shadow-lg shadow-purple-500/20 animate-pulse">PARCEIRO</span>
-                    )}
-                    {(!profile?.subscription_tier && trialDaysLeft <= 0) && (
-                      <Link href="/profile?tab=billing" className="text-[8px] font-black text-accent hover:underline uppercase tracking-tighter">Virar Pro</Link>
-                    )}
-                  </div>
-
-                  <p className="font-bold text-white text-sm truncate leading-tight">
+                  <p className="font-black text-white text-[13px] truncate leading-none mb-1 uppercase tracking-tight">
                     {user.user_metadata.full_name || user.user_metadata.username || 'Pescador'}
                   </p>
-                  
-                  <div className="flex items-center justify-between mt-1 mb-1">
-                    <span className="text-[10px] text-accent font-bold uppercase tracking-tighter">XP {userXP}</span>
-                    <span className="text-[10px] text-gray-500 font-bold">{xpForNextLevel - (userXP % 500)} para L{userLevel + 1}</span>
-                  </div>
-                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                    <div
-                      className="h-full bg-gradient-to-r from-accent to-accent-secondary rounded-full transition-all duration-1000"
-                      style={{ width: `${xpProgress}%` }}
-                    />
+                  <div className="flex items-center gap-1.5 opacity-60">
+                    <userRank.icon size={10} style={{ color: userRank.color }} />
+                    <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: userRank.color }}>
+                      {userRank.title}
+                    </span>
                   </div>
                 </div>
               )}
-            </div>
-            {/* Trial Counter */}
-            {trialDaysLeft > 0 && (
-              <div className={`px-2 mb-2 transition-all ${expanded ? 'block' : 'hidden'}`}>
-                <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-2 flex items-center justify-between">
-                  <span className="text-[9px] font-black text-cyan-400 uppercase tracking-widest">Trial Premium</span>
-                  <span className="text-[10px] font-bold text-white whitespace-nowrap">{trialDaysLeft} dias restando</span>
-                </div>
-              </div>
-            )}
-            {!expanded && (
-              <div className="mt-2 h-1 w-8 mx-auto bg-white/5 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-accent rounded-full transition-all duration-1000"
-                  style={{ width: `${xpProgress}%` }}
-                />
-              </div>
-            )}
-          </div>
-        )}
+            </Link>
+          ) : (
+             <Link href="/login" className={`flex items-center gap-3 p-3 rounded-2xl transition-all bg-accent/10 border border-accent/20 hover:bg-accent/20 ${!expanded ? 'justify-center p-2' : ''}`}>
+               <User size={20} className="text-accent" />
+               {expanded && (
+                 <span className="text-xs font-black uppercase tracking-widest text-accent fade-in">Meu Perfil</span>
+               )}
+             </Link>
+          )}
+        </div>
 
         {/* Navigation */}
         <nav className="flex-1 flex flex-col gap-1 px-2">
@@ -315,19 +244,12 @@ export default function Sidebar({
               </Link>
             )
           })}
-          {/* Navigation Items (Regular) - Removed Admin Link from here to consolidate at bottom */}
         </nav>
 
-        {/* Separador */}
         <div className="divider mx-2 my-2" />
 
-        {/* Status de conexão + sync */}
         <div className="px-2 sidebar-footer">
-          <div
-            className="sidebar-item"
-            style={{ gap: 10 }}
-            title={isOnline ? 'Online' : 'Offline'}
-          >
+          <div className="sidebar-item" style={{ gap: 10 }}>
             {isOnline
               ? <Wifi size={18} color="var(--color-accent-primary)" />
               : <WifiOff size={18} color="var(--color-accent-danger)" />
@@ -337,31 +259,10 @@ export default function Sidebar({
                 <p style={{ fontSize: 12, fontWeight: 600, color: isOnline ? 'var(--color-accent-primary)' : '#ef4444' }}>
                   {isOnline ? 'Online' : 'Offline'}
                 </p>
-                {pendingSync > 0 && (
-                  <p style={{ fontSize: 10, color: 'var(--color-accent-warm)' }}>
-                    {pendingSync} item(ns) pendente(s)
-                  </p>
-                )}
-              </div>
-            )}
-            {!expanded && pendingSync > 0 && (
-              <div
-                className="absolute"
-                style={{
-                  right: 8, top: 'auto', bottom: 8,
-                  width: 16, height: 16,
-                  background: 'var(--color-accent-warm)',
-                  borderRadius: '50%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 10, fontWeight: 700, color: '#000',
-                }}
-              >
-                {pendingSync}
               </div>
             )}
           </div>
 
-          {/* Área Comercial / Pesqueiros */}
           {user && (
             <Link 
               href={isResortOwner ? '/resort-admin' : '/profile?tab=business'} 
@@ -385,13 +286,11 @@ export default function Sidebar({
             </Link>
           )}
 
-          {/* Settings */}
           <Link href="/settings" id="nav-settings" className="sidebar-item">
             <Settings size={18} style={{ flexShrink: 0 }} />
             {expanded && <span className="fade-in" style={{ fontSize: 14 }}>Configurações</span>}
           </Link>
 
-          {/* Auth Buttons */}
           {user ? (
             <div className="flex flex-col gap-1 pb-2">
               <SignOutButton isExpanded={expanded} />
@@ -404,15 +303,6 @@ export default function Sidebar({
         </div>
       </div>
     </aside>
-    {showLanding && (
-      <B2BLanding 
-         onClose={() => setShowLanding(false)} 
-         onStart={() => {
-            setShowLanding(false)
-            window.location.href = '/profile?tab=business&start=true'
-         }}
-      />
-    )}
     </>
   )
 }

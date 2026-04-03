@@ -135,7 +135,7 @@ export default function EventsPage() {
       <Sidebar />
       
       <main className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-12 pb-32">
-        <div className="max-w-5xl mx-auto space-y-12">
+        <div className="max-w-5xl mx-auto space-y-12 pt-12 md:pt-0">
           
           {/* Header */}
           <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 fade-in">

@@ -8,7 +8,7 @@ export default function LogbookPage() {
     <div className="flex w-screen h-screen overflow-hidden bg-[#0a0f1a]">
       <Sidebar />
       
-      <main className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-12">
+      <main className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-12 pt-20 md:pt-12">
         <div className="max-w-4xl mx-auto h-full flex flex-col justify-center items-center space-y-8 fade-in">
           
           <div className="relative">
