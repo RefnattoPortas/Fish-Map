@@ -294,11 +294,12 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
   if (checkingTier) return null
 
   return (
-    <div className="fixed inset-0 z-[1500] flex items-center justify-center p-2 sm:p-4 bg-black/80">
+    <div className="fixed inset-0 z-[1500] flex p-2 sm:p-4 pb-12 sm:pb-24 bg-black/80 overflow-y-auto">
       <div className="glass-elevated fade-in-up" 
            style={{ 
-             width: '100%', maxWidth: 715, borderRadius: 28, maxHeight: '95vh', 
-             display: 'flex', flexDirection: 'column', overflow: 'hidden' 
+             width: '100%', maxWidth: 715, borderRadius: 28, 
+             margin: 'auto',
+             display: 'flex', flexDirection: 'column' 
            }}>
         
         {/* Header */}
@@ -319,7 +320,7 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
         </div>
 
         {/* Form Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: 28, display: 'flex', flexDirection: 'column', gap: 24 }} className="custom-scrollbar">
+        <div style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 24 }}>
           
           {/* Nome */}
           <div>

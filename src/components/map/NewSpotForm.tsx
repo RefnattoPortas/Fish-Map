@@ -183,7 +183,7 @@ export default function NewSpotForm({ userId, isOnline, onClose, onSuccess, onSw
 
   return (
     <div
-      className="fixed inset-0 z-[1500] flex items-center justify-center p-2 sm:p-4 bg-black/80"
+      className="fixed inset-0 z-[1500] flex p-2 sm:p-4 pb-12 sm:pb-24 bg-black/80 overflow-y-auto"
     >
       <div
         className="glass-elevated fade-in-up"
@@ -191,10 +191,9 @@ export default function NewSpotForm({ userId, isOnline, onClose, onSuccess, onSw
           width: '100%',
           maxWidth: 650,
           borderRadius: 24,
-          maxHeight: '90vh',
+          margin: 'auto', // centers vertically when small, push down when large
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden',
           boxShadow: '0 32px 64px rgba(0,0,0,0.6)',
         }}
       >
@@ -216,7 +215,7 @@ export default function NewSpotForm({ userId, isOnline, onClose, onSuccess, onSw
         </div>
 
         {/* Form Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
           
           {/* Título */}
           <div>
