@@ -62,7 +62,8 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
     },
     is_partner: false,
     lat: initialLat || -15.7801,
-    lng: initialLng || -47.9292
+    lng: initialLng || -47.9292,
+    photoFile: null as File | null
   })
 
   const supabase = getSupabaseClient() as any
@@ -253,6 +254,20 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
         }])
 
       if (resortError) throw resortError
+
+      // 3. Upload da foto se houver
+      if (data.photoFile) {
+        const ext = data.photoFile.name.split('.').pop()
+        const path = `spots/${spotData.id}/cover.${ext}`
+        const { error: uploadError } = await supabase.storage.from('photos').upload(path, data.photoFile, { upsert: true })
+        
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from('photos').getPublicUrl(path)
+          if (urlData?.publicUrl) {
+            await supabase.from('spots').update({ photo_url: urlData.publicUrl }).eq('id', spotData.id)
+          }
+        }
+      }
 
       setSuccess(true)
       setTimeout(() => {
@@ -522,14 +537,57 @@ export default function NewResortForm({ userId, isOnline, initialLat, initialLng
           </div>
 
           {/* Taxa de Entrada */}
-          <div>
-            <label className="label">Taxa de Entrada</label>
-            <input 
-              className="input" 
-              placeholder="Ex: R$ 50,00"
-              value={data.prices.entry}
-              onChange={e => setData(d => ({ ...d, prices: { ...d.prices, entry: e.target.value } }))}
-            />
+          <div className="space-y-4">
+            <div>
+              <label className="label">Taxa de Entrada</label>
+              <input 
+                className="input" 
+                placeholder="Ex: R$ 50,00"
+                value={data.prices.entry}
+                onChange={e => setData(d => ({ ...d, prices: { ...d.prices, entry: e.target.value } }))}
+              />
+            </div>
+
+            {/* Upload de Foto da Capa */}
+            <div className="bg-white/5 p-6 rounded-3xl border border-dashed border-white/20 hover:border-accent/40 transition-colors group">
+              <label className="label flex items-center gap-2">
+                <Camera size={16} className="text-secondary" /> Foto da Capa (Opcional)
+              </label>
+              <div className="mt-3 flex items-center gap-6">
+                <div className="w-24 h-24 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center overflow-hidden shadow-inner shrink-0">
+                  {data.photoFile ? (
+                    <img 
+                      src={URL.createObjectURL(data.photoFile)} 
+                      className="w-full h-full object-cover" 
+                      alt="Preview"
+                    />
+                  ) : (
+                    <Camera size={32} className="text-white/10 group-hover:text-white/20 transition-colors" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    id="resort-photo" 
+                    className="hidden" 
+                    onChange={e => {
+                      const file = e.target.files?.[0]
+                      if (file) setData(d => ({ ...d, photoFile: file }))
+                    }}
+                  />
+                  <label 
+                    htmlFor="resort-photo"
+                    className="btn-secondary w-full cursor-pointer py-3 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 border-white/10 hover:border-accent hover:text-accent transition-all"
+                  >
+                    <Plus size={14} /> {data.photoFile ? 'Trocar Foto' : 'Escolher Foto'}
+                  </label>
+                  <p className="text-[10px] text-gray-500 mt-3 leading-relaxed">
+                    A primeira impressão é a que fica! Escolha uma foto bem bonita da entrada ou dos tanques do seu pesqueiro.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Localização */}

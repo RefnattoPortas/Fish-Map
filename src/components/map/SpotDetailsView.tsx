@@ -65,6 +65,40 @@ export default function SpotDetailsView({
   const [showTrophyModal, setShowTrophyModal] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [selectedViewerPhoto, setSelectedViewerPhoto] = useState<string | null>(null)
+  const [isUpdatingPhoto, setIsUpdatingPhoto] = useState(false)
+
+  const handlePhotoUpdate = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !spot || !user) return
+
+    setIsUpdatingPhoto(true)
+    try {
+      const supabase = getSupabaseClient()
+      const ext = file.name.split('.').pop()
+      const path = `spots/${spot.id}/cover_${Date.now()}.${ext}`
+      
+      const { error: uploadError } = await supabase.storage.from('photos').upload(path, file, { upsert: true })
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = supabase.storage.from('photos').getPublicUrl(path)
+      if (!urlData?.publicUrl) throw new Error('Não foi possível gerar URL pública')
+
+      const { error: updateError } = await (supabase.from('spots') as any).update({ photo_url: urlData.publicUrl }).eq('id', spot.id)
+      if (updateError) throw updateError
+
+      // Atualização local imediata para feedback visual
+      if (spot) {
+        spot.photo_url = urlData.publicUrl
+      }
+      
+      alert('Foto da capa atualizada com sucesso!')
+    } catch (err: any) {
+      console.error('Erro ao atualizar foto:', err)
+      alert('Erro ao atualizar foto: ' + err.message)
+    } finally {
+      setIsUpdatingPhoto(false)
+    }
+  }
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -220,11 +254,18 @@ export default function SpotDetailsView({
       >
         <div className="flex-1 overflow-y-auto w-full pb-32 custom-scrollbar">
           <div className="relative h-64 md:h-80 flex-shrink-0 bg-dark overflow-hidden group">
-          {spot.is_resort && (spot as any).resort_photos && (spot as any).resort_photos.length > 0 ? (
+          {spot.is_resort && (spot as any).resort_photos && Array.isArray((spot as any).resort_photos) && (spot as any).resort_photos.length > 0 ? (
             <div className="flex w-full h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide">
               {(spot as any).resort_photos.map((url: string, i: number) => (
                 <div key={i} className="min-w-full h-full snap-center relative">
-                  <img src={url} className="w-full h-full object-cover" alt={`${spot.title} ${i+1}`} />
+                  <img 
+                    src={url} 
+                    className="w-full h-full object-cover" 
+                    alt={`${spot.title} ${i+1}`}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=1000'
+                    }}
+                  />
                   <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-1 z-10 md:hidden">
                      {(spot as any).resort_photos.map((_: any, dotIdx: number) => (
                        <div key={dotIdx} className={`w-1.5 h-1.5 rounded-full ${i === dotIdx ? 'bg-accent' : 'bg-white/30'}`} />
@@ -234,11 +275,46 @@ export default function SpotDetailsView({
               ))}
             </div>
           ) : (
-            <img 
-              src={spot.photo_url || 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=1000'} 
-              className="w-full h-full object-cover"
-              alt={spot.title}
-            />
+            <div className="w-full h-full relative group">
+              <img 
+                src={spot.photo_url || (spot as any).photo_url || 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=1000'} 
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                alt={spot.title}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=1000'
+                }}
+              />
+              {!spot.photo_url && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
+                  <Camera className="text-white/20 group-hover:text-white/50" size={32} />
+                </div>
+              )}
+              
+              {/* Botão de Editar Foto (Apenas para o Dono) */}
+              {user && user.id === spot.user_id && (
+                <div className="absolute top-4 right-16 z-20">
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    id="edit-spot-photo"
+                    onChange={handlePhotoUpdate}
+                    disabled={isUpdatingPhoto}
+                  />
+                  <label 
+                    htmlFor="edit-spot-photo"
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl bg-black/60 border border-white/20 hover:bg-black/80 hover:border-accent text-white transition-all cursor-pointer shadow-lg backdrop-blur-sm ${isUpdatingPhoto ? 'opacity-50 cursor-wait' : ''}`}
+                  >
+                    {isUpdatingPhoto ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : <Camera size={16} />}
+                    <span className="text-[10px] font-black uppercase tracking-wider">
+                      {isUpdatingPhoto ? 'Salvando...' : spot.photo_url ? 'Trocar Foto' : 'Adicionar Foto'}
+                    </span>
+                  </label>
+                </div>
+              )}
+            </div>
           )}
 
           {spot.is_resort && (spot as any).resort_photos?.length > 1 && (
