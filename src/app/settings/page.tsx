@@ -2,11 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import Sidebar from '@/components/layout/Sidebar'
-import { Settings, User, Bell, Shield, LogOut, Save, Camera, CheckCircle2, Map as MapIcon, Moon, Sun, Download, Trash2, Globe } from 'lucide-react'
+import { 
+  Settings, User, Bell, Shield, LogOut, Save, Camera, CheckCircle2, 
+  Map as MapIcon, Moon, Sun, Download, Trash2, Globe, LifeBuoy, 
+  Crown, Clock, MessageSquare, AlertCircle, ArrowLeft 
+} from 'lucide-react'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { getMapRegions, deleteMapRegion } from '@/lib/offline/indexeddb'
+import TicketForm from '@/components/support/TicketForm'
+import StripePricingTable from '@/components/billing/StripePricingTable'
+import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
-export default function SettingsPage() {
+function SettingsContent() {
+  const searchParams = useSearchParams()
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>({
     display_name: '',
@@ -17,16 +26,45 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const [activeTab, setActiveTab] = useState('Perfil')
+  
+  // Detect tab from URL
+  const tabParam = searchParams.get('tab')
+  const [activeTab, setActiveTab] = useState(tabParam || 'Perfil')
+  
   const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('light')
   const [mapRegions, setMapRegions] = useState<any[]>([])
+  const [tickets, setTickets] = useState<any[]>([])
+  const [ticketsLoading, setTicketsLoading] = useState(false)
+  const [showSupportForm, setShowSupportForm] = useState(false)
 
   useEffect(() => {
     fetchProfile()
     fetchMapRegions()
+    fetchMyTickets()
     const savedMapTheme = localStorage.getItem('fishgada_map_theme') as 'dark' | 'light'
     if (savedMapTheme) setMapTheme(savedMapTheme)
   }, [])
+
+  // Update tab if URL changes
+  useEffect(() => {
+    if (tabParam) setActiveTab(tabParam)
+  }, [tabParam])
+
+  const fetchMyTickets = async () => {
+    const supabase = getSupabaseClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    setTicketsLoading(true)
+    const { data, error } = await supabase
+      .from('support_tickets')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (!error) setTickets(data || [])
+    setTicketsLoading(false)
+  }
 
   const handleLogout = async () => {
     if (!confirm('Tem certeza que deseja sair da sua conta?')) return
@@ -133,6 +171,8 @@ export default function SettingsPage() {
                 { label: 'Mapa & Visual', icon: MapIcon },
                 { label: 'Mapas Baixados', icon: Download },
                 { label: 'Privacidade', icon: Shield },
+                { label: 'Minha Assinatura', icon: Crown },
+                { label: 'Suporte', icon: LifeBuoy },
               ].map((item) => (
                 <button
                   key={item.label}
@@ -391,6 +431,88 @@ export default function SettingsPage() {
                 </div>
               )}
 
+              {activeTab === 'Minha Assinatura' && (
+                <div className="glass-elevated p-8 rounded-[32px] border border-white/5 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-[60px] rounded-full -mr-16 -mt-16" />
+                  <h3 className="text-white font-black text-lg uppercase tracking-tighter mb-8 flex items-center gap-2">
+                    <Crown size={20} className="text-blue-400" /> Assinatura Fishgada
+                  </h3>
+                  
+                  <div className="space-y-8">
+                    <div className="text-center mb-8">
+                      <p className="text-slate-400 text-sm mb-6">
+                        Desbloqueie o poder total do Fishgada com ferramentas exclusivas.
+                      </p>
+                      <StripePricingTable />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'Suporte' && (
+                <div className="glass-elevated p-8 rounded-[32px] border border-white/5 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 blur-[60px] rounded-full -mr-16 -mt-16" />
+                  
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-white font-black text-lg uppercase tracking-tighter flex items-center gap-2">
+                      <LifeBuoy size={20} className="text-cyan-400" /> Central de Ajuda
+                    </h3>
+                    <button 
+                      onClick={() => setShowSupportForm(!showSupportForm)}
+                      className={`btn-primary px-4 py-2 rounded-xl text-xs flex items-center gap-2 ${showSupportForm ? 'bg-white/10 text-white' : ''}`}
+                    >
+                      {showSupportForm ? <><ArrowLeft size={14} /> Voltar</> : <><MessageSquare size={14} /> Novo Ticket</>}
+                    </button>
+                  </div>
+
+                  <div className="space-y-6">
+                    {showSupportForm ? (
+                      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <TicketForm />
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">Seus Tickets</h4>
+                        
+                        {ticketsLoading ? (
+                          <div className="py-12 text-center">
+                            <div className="w-8 h-8 border-2 border-accent/30 border-t-accent rounded-full animate-spin mx-auto mb-4" />
+                            <p className="text-gray-500 text-xs uppercase tracking-widest font-black">Buscando histórico...</p>
+                          </div>
+                        ) : tickets.length > 0 ? (
+                          <div className="grid gap-3">
+                            {tickets.map(ticket => (
+                              <div key={ticket.id} className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between group hover:border-accent/30 transition-all">
+                                <div className="flex items-center gap-4">
+                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${ticket.status === 'concluído' ? 'bg-green-500/10 text-green-500' : 'bg-accent/10 text-accent'}`}>
+                                    {ticket.status === 'concluído' ? <CheckCircle2 size={18} /> : <MessageSquare size={18} />}
+                                  </div>
+                                  <div>
+                                    <h5 className="text-white font-bold text-sm leading-none mb-1">{ticket.subject}</h5>
+                                    <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest">
+                                      #{ticket.id.slice(0, 8)} • {(ticket.status === 'open' || ticket.status === 'aberto') ? 'Aberto' : ticket.status}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className={`text-[9px] px-2 py-1 rounded font-black uppercase tracking-widest ${ticket.priority === 'alta' ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-gray-400'}`}>
+                                  {ticket.priority}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="py-12 text-center bg-white/[0.02] rounded-3xl border border-dashed border-white/10">
+                            <AlertCircle className="text-gray-600 mx-auto mb-3" size={32} />
+                            <p className="text-gray-400 text-sm font-bold">Nenhum ticket encontrado</p>
+                            <p className="text-gray-600 text-[10px] uppercase tracking-widest font-black mt-1">Precisa de ajuda? Abra um novo ticket acima.</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
 
             </div>
           </div>
@@ -404,5 +526,17 @@ export default function SettingsPage() {
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
       `}</style>
     </div>
+  )
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-screen items-center justify-center bg-[#0a0f1a]">
+        <div className="w-12 h-12 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
+      </div>
+    }>
+      <SettingsContent />
+    </Suspense>
   )
 }

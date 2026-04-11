@@ -22,8 +22,6 @@ const navItems = [
   { href: '/ranking',     icon: Crown,   label: 'Ranking',        id: 'nav-ranking' },
   { href: '/events',      icon: Trophy,  label: 'Torneios & Eventos', id: 'nav-tournaments' },
   { href: '/logbook',    icon: BookOpen, label: 'Diário de Pesca', id: 'nav-logbook' },
-  { href: '/suporte',    icon: LifeBuoy, label: 'Suporte & Feedback', id: 'nav-support' },
-  { href: '/upgrade',    icon: Crown,    label: 'Assinar PRO',     id: 'nav-upgrade', proOnly: true },
 ]
 
 interface SidebarProps {
