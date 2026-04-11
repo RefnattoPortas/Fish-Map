@@ -68,6 +68,7 @@ export async function middleware(request: NextRequest) {
         .single()
 
       const isPro = profile?.plan_type === 'pro' || 
+                   profile?.plan_type === 'partner' ||
                    (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date())
 
       if (!isPro) {
