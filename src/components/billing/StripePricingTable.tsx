@@ -21,6 +21,8 @@ export default function StripePricingTable() {
     </div>
   );
 
+  const StripeTable = 'stripe-pricing-table' as any;
+
   return (
     <div className="w-full bg-transparent rounded-3xl overflow-hidden">
       <Script 
@@ -28,7 +30,7 @@ export default function StripePricingTable() {
         strategy="lazyOnload" 
       />
       
-      <stripe-pricing-table 
+      <StripeTable 
         pricing-table-id="prctbl_1TL9g8iUeqXANSvNMFQv9ix"
         publishable-key="pk_test_51TL8jy8iUeqXANSvjIom0nEX50EKm38wuEf6QKQnxvc3B0lqFrRGy8gav0dnfyyu5mJp9axqZry1UC0Fu49KsbSq00qBkEkpqp"
         client-reference-id={user.id}
