@@ -46,17 +46,40 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Se o usuário tentar acessar páginas protegidas (/profile, /settings, /captures) sem estar logado
-  const protectedRoutes = ['/profile', '/settings', '/captures']
-  const isProtectedRoute = protectedRoutes.some(path => request.nextUrl.pathname.startsWith(path))
+  // 1. Proteção de Rotas de Autenticação
+  const authProtectedRoutes = ['/profile', '/settings', '/captures', '/radar', '/ranking', '/explore']
+  const isAuthProtectedRoute = authProtectedRoutes.some(path => request.nextUrl.pathname.startsWith(path))
 
-  if (!user && isProtectedRoute) {
-    return NextResponse.redirect(new URL('/', request.url))
+  if (!user && isAuthProtectedRoute) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // 2. Proteção de Rotas PRO (Paywall)
+  if (user) {
+    const proRoutes = ['/explore', '/ranking']
+    const isProRoute = proRoutes.some(path => request.nextUrl.pathname.startsWith(path))
+
+    if (isProRoute) {
+      // Buscar status PRO no perfil
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('plan_type, trial_ends_at')
+        .eq('id', user.id)
+        .single()
+
+      const isPro = profile?.plan_type === 'pro' || 
+                   (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date())
+
+      if (!isPro) {
+        // Redirecionar para Landing Page de upgrade com resumo dos benefícios
+        return NextResponse.redirect(new URL('/upgrade', request.url))
+      }
+    }
   }
 
   return response
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }

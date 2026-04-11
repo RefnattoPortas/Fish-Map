@@ -23,6 +23,7 @@ const navItems = [
   { href: '/events',      icon: Trophy,  label: 'Torneios & Eventos', id: 'nav-tournaments' },
   { href: '/logbook',    icon: BookOpen, label: 'Diário de Pesca', id: 'nav-logbook' },
   { href: '/suporte',    icon: LifeBuoy, label: 'Suporte & Feedback', id: 'nav-support' },
+  { href: '/upgrade',    icon: Crown,    label: 'Assinar PRO',     id: 'nav-upgrade', proOnly: true },
 ]
 
 interface SidebarProps {
@@ -203,9 +204,14 @@ export default function Sidebar({
               
               {expanded && (
                 <div className="fade-in flex-1 min-w-0">
-                  <p className="font-black text-white text-[13px] truncate leading-none mb-1 uppercase tracking-tight">
-                    {user.user_metadata.full_name || user.user_metadata.username || 'Pescador'}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-black text-white text-[13px] truncate leading-none uppercase tracking-tight">
+                      {user.user_metadata.full_name || user.user_metadata.username || 'Pescador'}
+                    </p>
+                    {(profile?.plan_type === 'pro' || (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date())) && (
+                      <Crown size={12} className="text-blue-400 fill-blue-400/20" />
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5 opacity-60">
                     <userRank.icon size={10} style={{ color: userRank.color }} />
                     <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: userRank.color }}>
@@ -227,8 +233,15 @@ export default function Sidebar({
 
         {/* Navigation */}
         <nav className="flex-1 flex flex-col gap-1 px-2">
-          {navItems.map(({ href, icon: Icon, label, id }) => {
+          {navItems.map(({ href, icon: Icon, label, id, ...rest }) => {
             const isActive = pathname === href
+            
+            // Ocultar "Assinar PRO" se já for PRO
+            const isUserPro = profile?.plan_type === 'pro' || 
+                             (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date())
+            
+            if (href === '/upgrade' && isUserPro) return null
+
             return (
               <Link
                 key={href}
