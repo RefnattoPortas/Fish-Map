@@ -27,12 +27,12 @@ export default function StripePricingTable() {
         strategy="lazyOnload" 
       />
       
-      <stripe-pricing-table 
-        pricing-table-id={process.env.NEXT_PUBLIC_STRIPE_PRICING_TABLE_ID || "prctbl_1TL9g8iUeqXANSvNMFQv9ix"}
-        publishable-key={process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_51TL8jy8iUeqXANSvjIom0nEX50EKm38wuEf6QKQnxvc3B0lqFrRGy8gav0dnfyyu5mJp9axqZry1UC0Fu49KsbSq00qBkEkpqp"}
-        client-reference-id={user.id}
-        customer-email={user.email}
-      />
+      {React.createElement('stripe-pricing-table' as any, {
+        'pricing-table-id': process.env.NEXT_PUBLIC_STRIPE_PRICING_TABLE_ID || "prctbl_1TL9g8iUeqXANSvNMFQv9ix",
+        'publishable-key': process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_51TL8jy8iUeqXANSvjIom0nEX50EKm38wuEf6QKQnxvc3B0lqFrRGy8gav0dnfyyu5mJp9axqZry1UC0Fu49KsbSq00qBkEkpqp",
+        'client-reference-id': user.id,
+        'customer-email': user.email
+      })}
     </div>
   );
 }
